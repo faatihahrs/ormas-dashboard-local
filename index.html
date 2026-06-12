@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Monitoring ORMAS - BAKESBANGPOL DKI Jakarta</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">DKI</div>
+        <div>
+          <strong>BAKESBANGPOL</strong>
+          <span>Provinsi DKI Jakarta</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-link active" data-page="dashboard">🏠 Dashboard</button>
+        <button class="nav-link" data-page="ormas">📋 Data ORMAS</button>
+        <button class="nav-link" data-page="pelaporan">📝 Pelaporan ORMAS</button>
+        <button class="nav-link" data-page="verifikasi">✅ Verifikasi</button>
+        <button class="nav-link" data-page="dokumen">📁 Dokumen</button>
+        <button class="nav-link" data-page="flowchart">🔁 Flowchart</button>
+        <button class="nav-link" data-page="laporan">📄 Laporan</button>
+      </nav>
+      <div class="sidebar-card">
+        <strong>Sistem Monitoring ORMAS</strong>
+        <small>Prototype lokal v1.0</small>
+        <small>© 2026</small>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="pageTitle">Dashboard Monitoring ORMAS</h1>
+          <p>Sistem Pelaporan Mandiri, Verifikasi, dan Monitoring ORMAS</p>
+        </div>
+        <div class="top-actions">
+          <input id="searchInput" type="search" placeholder="Cari ORMAS, dokumen, atau wilayah..." />
+          <button class="icon-btn">🔔<span>3</span></button>
+          <div class="user-chip">👤 Admin BAKESBANGPOL</div>
+        </div>
+      </header>
+
+      <section id="dashboard" class="page active-page">
+        <div class="kpi-grid">
+          <article class="kpi blue"><div class="kpi-icon">👥</div><div><small>Total ORMAS</small><strong>6.842</strong><span>Terdaftar di DKI Jakarta</span></div></article>
+          <article class="kpi yellow"><div class="kpi-icon">⏳</div><div><small>Menunggu Verifikasi</small><strong>328</strong><span>4,79% dari total</span></div></article>
+          <article class="kpi orange"><div class="kpi-icon">⚠️</div><div><small>Perlu Revisi</small><strong>117</strong><span>1,71% dari total</span></div></article>
+          <article class="kpi green"><div class="kpi-icon">✅</div><div><small>Diverifikasi</small><strong>5.914</strong><span>86,44% dari total</span></div></article>
+          <article class="kpi blue"><div class="kpi-icon">📁</div><div><small>Dokumen Lengkap</small><strong>5.106</strong><span>74,67% dari total</span></div></article>
+          <article class="kpi red"><div class="kpi-icon">📅</div><div><small>Kepengurusan Kadaluarsa</small><strong>842</strong><span>12,31% dari total</span></div></article>
+        </div>
+
+        <div class="filter-row">
+          <label>Periode<select><option>Mei 2026</option><option>April 2026</option></select></label>
+          <label>Wilayah<select><option>Semua Wilayah</option><option>Jakarta Pusat</option><option>Jakarta Timur</option></select></label>
+          <label>Status<select><option>Semua Status</option><option>Menunggu Verifikasi</option><option>Diverifikasi</option></select></label>
+          <article class="mini-card"><small>Laporan Bulan Ini</small><strong>184</strong><span>+12,6%</span></article>
+          <article class="mini-card success"><small>Surat Diterbitkan</small><strong>96</strong><span>+8,3%</span></article>
+        </div>
+
+        <div class="chart-grid">
+          <article class="panel wide"><h3>Tren Pelaporan ORMAS</h3><canvas id="trendChart"></canvas></article>
+          <article class="panel"><h3>Status Verifikasi</h3><canvas id="statusChart"></canvas></article>
+          <article class="panel wide"><h3>Sebaran ORMAS per Wilayah</h3><canvas id="regionChart"></canvas></article>
+          <article class="panel"><h3>Bidang Kegiatan ORMAS</h3><canvas id="fieldChart"></canvas></article>
+          <article class="panel map-panel"><h3>Peta Sebaran ORMAS</h3><div class="jakarta-map"><span class="tag p1">Jakarta Barat<br><b>1.450</b></span><span class="tag p2">Jakarta Pusat<br><b>1.205</b></span><span class="tag p3">Jakarta Utara<br><b>1.340</b></span><span class="tag p4">Jakarta Selatan<br><b>1.210</b></span><span class="tag p5">Jakarta Timur<br><b>1.460</b></span><span class="tag p6">Kep. Seribu<br><b>177</b></span></div></article>
+          <article class="panel"><h3>Status Kepengurusan</h3><canvas id="termChart"></canvas></article>
+        </div>
+
+        <article class="panel table-panel">
+          <div class="panel-head"><h3>Daftar ORMAS yang Perlu Ditindaklanjuti</h3><button class="outline-btn" data-page-jump="verifikasi">Lihat Semua →</button></div>
+          <table>
+            <thead><tr><th>No.</th><th>Nama ORMAS</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>Masa Bakti</th><th>Aksi</th></tr></thead>
+            <tbody id="followUpRows"></tbody>
+          </table>
+        </article>
+      </section>
+
+      <section id="ormas" class="page">
+        <article class="panel">
+          <div class="panel-head"><h2>Data ORMAS</h2><button class="primary-btn" data-page-jump="pelaporan">+ Tambah Pelaporan</button></div>
+          <table>
+            <thead><tr><th>Nama Organisasi</th><th>Bidang</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>Update Terakhir</th></tr></thead>
+            <tbody id="ormasRows"></tbody>
+          </table>
+        </article>
+      </section>
+
+      <section id="pelaporan" class="page">
+        <div class="form-layout">
+          <article class="panel">
+            <h2>Formulir Pelaporan ORMAS</h2>
+            <p class="muted">Contoh multi-step form untuk ORMAS mengisi data secara mandiri.</p>
+            <div class="steps">
+              <button class="step active" data-step="0">1 Data Organisasi</button>
+              <button class="step" data-step="1">2 Legalitas</button>
+              <button class="step" data-step="2">3 Alamat</button>
+              <button class="step" data-step="3">4 Pengurus</button>
+              <button class="step" data-step="4">5 Dokumen</button>
+              <button class="step" data-step="5">6 Review</button>
+            </div>
+            <form id="reportForm">
+              <div class="form-step active-form-step">
+                <div class="form-grid">
+                  <label>Nama Organisasi<input name="nama" value="Yayasan Peduli Pendidikan Anak Bangsa"></label>
+                  <label>Nama Singkatan<input name="singkatan" value="YPPA"></label>
+                  <label>Bidang Kegiatan<select name="bidang"><option>Pendidikan</option><option>Sosial</option><option>Keagamaan</option><option>Lingkungan</option></select></label>
+                  <label>Tempat Pendirian<input name="tempat" value="Jakarta"></label>
+                  <label>Tanggal Pendirian<input type="date" name="tanggal" value="2022-03-18"></label>
+                  <label>Asas Ciri Organisasi<input name="asas" value="Pancasila dan UUD 1945"></label>
+                  <label class="full">Tujuan Organisasi<textarea name="tujuan">Meningkatkan partisipasi masyarakat dalam bidang pendidikan dan sosial.</textarea></label>
+                </div>
+              </div>
+              <div class="form-step">
+                <div class="form-grid">
+                  <label>No. Akta Notaris<input value="12/AKTA/III/2022"></label>
+                  <label>Tanggal Akta Notaris<input type="date" value="2022-03-25"></label>
+                  <label>Nama Notaris<input value="Notaris Contoh, SH"></label>
+                  <label>Nomor AHU<input value="AHU-0001234.AH.01.07.TAHUN 2022"></label>
+                  <label>No. NPWP<input value="12.345.678.9-012.000"></label>
+                  <label>Nama Bank<input value="Bank DKI"></label>
+                </div>
+              </div>
+              <div class="form-step">
+                <div class="form-grid">
+                  <label class="full">Alamat Kantor/Sekretariat<textarea>Jl. Kebon Sirih No. 18, Jakarta Pusat</textarea></label>
+                  <label>Kelurahan<input value="Gambir"></label>
+                  <label>Kecamatan<input value="Gambir"></label>
+                  <label>Kota/Kabupaten<select><option>Jakarta Pusat</option><option>Jakarta Timur</option></select></label>
+                  <label>Kode Pos<input value="10110"></label>
+                  <label>Email<input value="kontak@ormascontoh.or.id"></label>
+                  <label>No. Telepon<input value="021-12345678"></label>
+                  <label>Website<input value="www.ormascontoh.or.id"></label>
+                </div>
+              </div>
+              <div class="form-step">
+                <div class="form-grid">
+                  <label>Ketua<input value="Ahmad Pratama"></label>
+                  <label>NIK Ketua<input value="3171xxxxxxxxxxxx"></label>
+                  <label>Sekretaris<input value="Siti Nurhayati"></label>
+                  <label>NIK Sekretaris<input value="3172xxxxxxxxxxxx"></label>
+                  <label>Bendahara<input value="Budi Santoso"></label>
+                  <label>NIK Bendahara<input value="3173xxxxxxxxxxxx"></label>
+                  <label>Masa Bakti Awal<input type="date" value="2022-01-01"></label>
+                  <label>Masa Bakti Akhir<input type="date" value="2025-12-31"></label>
+                </div>
+              </div>
+              <div class="form-step">
+                <div class="upload-grid">
+                  <div class="upload-box">📄 Surat Permohonan<br><small>uploaded: surat_permohonan.pdf</small></div>
+                  <div class="upload-box">📄 Akta Notaris<br><small>uploaded: akta_notaris.pdf</small></div>
+                  <div class="upload-box">📄 SK Kemenkumham/AHU<br><small>uploaded: sk_ahu.pdf</small></div>
+                  <div class="upload-box">📄 AD/ART<br><small>uploaded: ad_art.pdf</small></div>
+                  <div class="upload-box">🖼️ Logo Organisasi<br><small>uploaded: logo.png</small></div>
+                  <div class="upload-box optional">🏳️ Bendera Organisasi<br><small>optional</small></div>
+                </div>
+              </div>
+              <div class="form-step">
+                <div class="review-box">
+                  <h3>Review Pelaporan</h3>
+                  <p>Pastikan seluruh data organisasi, legalitas, alamat, pengurus, dan dokumen sudah sesuai sebelum dikirim.</p>
+                  <label class="checkbox"><input type="checkbox" checked> Saya menyatakan data dan dokumen yang diinput adalah benar dan dapat dipertanggungjawabkan.</label>
+                  <div class="status-flow"><span>Draft</span><b>→</b><span>Menunggu Verifikasi</span><b>→</b><span>Diverifikasi</span><b>→</b><span>Surat PDF</span></div>
+                </div>
+              </div>
+              <div class="form-actions"><button type="button" id="prevStep" class="outline-btn">Sebelumnya</button><button type="button" id="nextStep" class="primary-btn">Selanjutnya</button><button type="button" id="submitReport" class="success-btn hidden">Submit Pelaporan</button></div>
+            </form>
+          </article>
+          <article class="panel side-info">
+            <h3>Progress Kelengkapan</h3>
+            <div class="progress"><div style="width:82%"></div></div><strong>82%</strong>
+            <p class="muted">Data yang kurang: bendera organisasi, lokasi cabang.</p>
+            <h3>Alur Status</h3>
+            <ol class="mini-flow"><li>Draft</li><li>Menunggu Verifikasi</li><li>Perlu Revisi / Ditolak / Diverifikasi</li><li>Generate Surat</li></ol>
+          </article>
+        </div>
+      </section>
+
+      <section id="verifikasi" class="page">
+        <article class="panel">
+          <h2>Panel Verifikasi Admin</h2>
+          <div class="verification-card">
+            <div>
+              <h3>Yayasan Peduli Pendidikan Anak Bangsa</h3>
+              <p>Bidang: Pendidikan • Wilayah: Jakarta Selatan • Dokumen: 8/10</p>
+              <div class="doc-list"><span>✅ Akta Notaris</span><span>✅ SK AHU</span><span>✅ NPWP</span><span>✅ AD/ART</span><span>⚠️ Bendera belum ada</span></div>
+            </div>
+            <div class="verification-actions"><button class="warning-btn">Minta Revisi</button><button class="danger-btn">Tolak</button><button class="success-btn">Setujui & Generate Surat</button></div>
+          </div>
+          <textarea class="note-area" placeholder="Catatan verifikasi untuk ORMAS...">Mohon lengkapi dokumen bendera organisasi jika ada, dan pastikan nomor telepon aktif.</textarea>
+        </article>
+      </section>
+
+      <section id="dokumen" class="page">
+        <article class="panel"><h2>Monitoring Dokumen</h2><div class="document-grid"><div>📄 Surat Permohonan <b>6.210</b></div><div>📄 Akta Notaris <b>5.982</b></div><div>📄 SK AHU <b>5.914</b></div><div>📄 AD/ART <b>5.606</b></div><div>🧾 NPWP <b>5.430</b></div><div>🖼️ Logo <b>6.101</b></div></div></article>
+      </section>
+
+      <section id="flowchart" class="page">
+        <article class="panel"><h2>Flowchart Sistem</h2><div class="flow-grid"><div class="flow-node">ORMAS Registrasi/Login</div><div class="flow-arrow">→</div><div class="flow-node">Isi Multi-Step Form</div><div class="flow-arrow">→</div><div class="flow-node">Upload Dokumen</div><div class="flow-arrow">→</div><div class="flow-node">Submit</div><div class="flow-arrow">→</div><div class="flow-node yellow-node">Menunggu Verifikasi</div><div class="flow-arrow">→</div><div class="flow-node">Admin Cek Data</div><div class="flow-arrow">→</div><div class="flow-node split">Revisi / Tolak / Setujui</div><div class="flow-arrow">→</div><div class="flow-node green-node">Generate Surat PDF</div><div class="flow-arrow">→</div><div class="flow-node blue-node">Dashboard & Laporan</div></div></article>
+        <article class="panel"><h2>Data Flow</h2><div class="data-flow"><span>Frontend Form</span><span>Backend Validation</span><span>Database ORMAS</span><span>File Storage</span><span>Admin Verification</span><span>Dashboard API</span><span>Charts / Reports</span></div></article>
+      </section>
+
+      <section id="laporan" class="page">
+        <article class="panel"><h2>Laporan</h2><p class="muted">Contoh halaman export laporan.</p><div class="report-buttons"><button class="primary-btn">Export Excel</button><button class="outline-btn">Export PDF</button><button class="outline-btn">Rekap per Wilayah</button><button class="outline-btn">Rekap Status Verifikasi</button></div></article>
+      </section>
+    </main>
+  </div>
+  <script src="assets/app.js"></script>
+</body>
+</html>
