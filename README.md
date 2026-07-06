@@ -1,19 +1,22 @@
-# Dashboard Monitoring ORMAS - Local Prototype
+# BAKESBANGPOL ORMAS Prototype - SKT dan Keaktifan Dipisah
+
+Prototype lokal ini memisahkan proses:
+
+1. Pengajuan Tanda Lapor / SKT ORMAS
+   - Menggunakan profil ORMAS terverifikasi.
+   - Tidak meminta ulang data pendaftaran yang sudah ada.
+   - Fokus pada surat permohonan, perubahan data bila ada, dokumen pendukung, verifikasi, dan output surat PDF.
+
+2. Pelaporan Keaktifan ORMAS
+   - Proses khusus laporan kegiatan berkala.
+   - Tidak menghasilkan SKT/tanda lapor.
+   - Fokus pada detail kegiatan, periode laporan, peserta/manfaat, wilayah kegiatan, bukti kegiatan, review, dan rekap keaktifan.
 
 Cara menjalankan:
 
-1. Extract folder ZIP ini.
-2. Buka file `index.html` langsung di browser, atau jalankan local server:
-
 ```bash
-cd ormas-dashboard-local
+cd bakesbangpol-ormas-keaktifan-separated-prototype
 python -m http.server 8000
 ```
 
-Lalu buka:
-
-```text
-http://localhost:8000
-```
-
-Catatan: prototype ini menggunakan Chart.js dari CDN, jadi grafik tampil sempurna saat komputer terhubung internet. Tampilan dasar tetap bisa dibuka secara lokal.
+Buka: http://localhost:8000
