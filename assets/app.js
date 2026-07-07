@@ -292,3 +292,205 @@ function render(){
   else app.innerHTML=homePage();
   window.scrollTo(0,0);
 }
+
+// Public-safe ORMAS directory added for both public and employee dashboards.
+// This table is intentionally limited to organization-level contact data only.
+// It does not show ticket numbers, NIK, personal addresses, personal phone numbers, uploaded documents, or verification notes.
+const publicOrmasDirectory = [
+  {name:'Jurnal Demokrasi', short:'Jurdem', type:'Non Badan Hukum / SKT', field:'Pendidikan Politik', wilayah:'Gambir, Jakarta Pusat', email:'jurnaldemokrasi.poldem@gmail.com', phone:'021-3102401', website:'jurdem.or.id', activity:'Aktif melapor', contact:'Email / Website'},
+  {name:'Gerakan Anti Narkoba Nasional', short:'GANNAS', type:'Badan Hukum', field:'Sosial & Pencegahan Narkoba', wilayah:'Cipayung, Jakarta Timur', email:'sekretariat@gannas.or.id', phone:'021-8459012', website:'gannas.or.id', activity:'Aktif melapor', contact:'Email / Telepon'},
+  {name:'Yayasan Peduli Pendidikan Anak Bangsa', short:'YPPA', type:'Non Badan Hukum / SKT', field:'Pendidikan', wilayah:'Pasar Minggu, Jakarta Selatan', email:'kontak@yppa.or.id', phone:'021-7884120', website:'yppa.or.id', activity:'Aktif melapor', contact:'Email'},
+  {name:'Komunitas Lingkungan Hijau Jakarta', short:'KLHJ', type:'Non Badan Hukum / SKT', field:'Lingkungan', wilayah:'Tanjung Priok, Jakarta Utara', email:'info@klhj.or.id', phone:'021-4390128', website:'klhj.or.id', activity:'Perlu pembaruan laporan', contact:'Email / Telepon'},
+  {name:'Forum Pemuda Betawi Bersatu', short:'FPBB', type:'Badan Hukum', field:'Kepemudaan & Kebudayaan', wilayah:'Cengkareng, Jakarta Barat', email:'sekretariat@fpbb.or.id', phone:'021-5598120', website:'fpbb.or.id', activity:'Aktif melapor', contact:'Email / Website'},
+  {name:'Majelis Edukasi Sosial Nusantara', short:'MESN', type:'Badan Hukum', field:'Sosial & Keagamaan', wilayah:'Kemayoran, Jakarta Pusat', email:'majelis.edukasi@example.org', phone:'021-4288123', website:'-', activity:'Aktif melapor', contact:'Email / Telepon'}
+];
+
+function publicOrmasDirectoryTable(context='public'){
+  const title = context === 'admin'
+    ? 'Direktori ORMAS Publik yang Tampil di Halaman Masyarakat'
+    : 'Direktori ORMAS Terdata';
+  const subtitle = context === 'admin'
+    ? 'Data berikut adalah contoh field yang aman ditampilkan ke publik agar ORMAS dapat saling berkomunikasi tanpa membuka data internal.'
+    : 'Data kontak organisasi yang bersifat publik untuk mempermudah komunikasi dan kolaborasi antar-ORMAS.';
+  const rows = publicOrmasDirectory.map((o,i)=>`<tr>
+    <td>${i+1}</td>
+    <td><b>${o.name}</b><br><small>${o.short} • ${o.type}</small></td>
+    <td>${o.field}</td>
+    <td>${o.wilayah}</td>
+    <td><a class="click-link" href="mailto:${o.email}">${o.email}</a><br><small>${o.phone}</small></td>
+    <td>${o.website === '-' ? '-' : `<a class="click-link" href="javascript:void(0)">${o.website}</a>`}</td>
+    <td>${o.activity.includes('Perlu') ? '<span class="pill orange">Perlu Update</span>' : '<span class="pill green">Aktif</span>'}</td>
+  </tr>`).join('');
+  return `<article class="panel table-panel public-directory-panel"><div class="panel-head"><div><h3>${title}</h3><p class="muted">${subtitle}</p></div><button class="outline-btn" onclick="toast('Mockup: export direktori publik ORMAS')">Export Direktori</button></div><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Bidang</th><th>Wilayah</th><th>Kontak Publik</th><th>Website</th><th>Status Publik</th></tr></thead><tbody>${rows}</tbody></table><div class="public-note"><b>Batasan data publik:</b> tabel ini hanya menampilkan nama ORMAS, bidang, wilayah sekretariat secara umum, email/telepon organisasi, website, dan status publik. Nomor tiket, NIK pengurus, nomor HP pribadi, alamat rumah, dokumen upload, catatan verifikasi, dan status koreksi tidak ditampilkan.</div></article>`;
+}
+
+function publicDashboardContent(){return `<div class="dashboard-full public-only">${publicFilterRow()}<div class="kpi-grid">${kpi('Total ORMAS Terdata','6.842','Rekap agregat se-DKI Jakarta','blue','👥')}${kpi('Berbadan Hukum','3.256','47,6% dari total ORMAS','green','✅')}${kpi('Non Badan Hukum / SKT','3.586','52,4% dari total ORMAS','yellow','📄')}${kpi('Kepengurusan Aktif','5.106','74,7% dari total ORMAS','green','🗓️')}${kpi('Bidang Terbanyak','Sosial','1.842 ORMAS','blue','🤝')}${kpi('Wilayah Terbanyak','Jakarta Timur','1.460 ORMAS','blue','📍')}</div><div class="public-note"><b>Catatan Dashboard Publik:</b> halaman ini hanya menampilkan data agregat dan direktori publik organisasi. Nomor tiket, status verifikasi internal, catatan revisi, nomor HP pribadi pengurus, dokumen upload, dan tindakan pegawai tidak ditampilkan untuk publik.</div><div class="chart-grid"><article class="panel wide"><h3>Tren Lapor Keberadaan ORMAS</h3>${vBars([['Jan',920,55],['Feb',980,60],['Mar',1120,68],['Apr',1260,76],['Mei',1480,88],['Jun',1588,94],['Jul',1680,100]])}</article><article class="panel"><h3>Status Badan Hukum</h3>${donut([['Badan Hukum',3256,'#22c55e'],['Non Badan Hukum / SKT',3586,'#fbbf24']])}</article><article class="panel wide"><h3>Sebaran ORMAS per Wilayah</h3>${vBars(wilayah)}</article><article class="panel"><h3>Bidang Kegiatan Utama</h3>${barChart(bidang)}</article><article class="panel map-panel"><h3>Peta Sebaran ORMAS</h3>${mapPanel()}</article><article class="panel"><h3>Status Kepengurusan</h3>${donut([['Aktif',5106,'#22c55e'],['Akan Berakhir',894,'#fbbf24'],['Kadaluarsa',842,'#ef4444']],'6.842')}</article><article class="panel"><h3>Cabang / Unit / Sayap Organisasi</h3>${donut([['Memiliki',2388,'#5371ff'],['Tidak Memiliki',4454,'#d0d5dd']],'6.842')}</article><article class="panel"><h3>Ringkasan Kontak Organisasi</h3>${barChart([['Memiliki Email',6280,92],['Memiliki Telepon',5915,86],['Memiliki Website',2810,41]])}</article></div>${publicOrmasDirectoryTable('public')}${publicTable()}</div>`;}
+
+function fullDashboard(isAdmin=false){
+  if(!isAdmin) return publicDashboardContent();
+  return `<div class="dashboard-full">${filterRow()}<div class="kpi-grid">${kpi('Total ORMAS','6.842','Terdata di DKI Jakarta','blue','👥')}${kpi('Pengajuan Tanda Lapor/SKT','312','Proses surat/tanda lapor','blue','📄')}${kpi('Pelaporan Keaktifan','1.284','Laporan kegiatan masuk','green','📌')}${kpi('Menunggu Review','150','SKT dan kegiatan','orange','⏳')}${kpi('Perlu Koreksi/Bukti','200','Perlu tindak lanjut','red','⚠️')}${kpi('Output Selesai','1.217','Surat/laporan valid','green','✅')}</div><div class="chart-grid"><article class="panel wide"><h3>Tren Pengajuan SKT dan Laporan Keaktifan</h3>${vBars([['Jan',140,45],['Feb',169,54],['Mar',208,67],['Apr',231,74],['Mei',272,87],['Jun',303,100],['Jul',273,90]])}</article><article class="panel"><h3>Status Operasional Internal</h3>${donut([['Menunggu Review',150,'#fbbf24'],['Koreksi/Bukti Tambahan',200,'#fb923c'],['Selesai',1217,'#22c55e'],['Ditolak',29,'#ef4444']],'1.596')}</article><article class="panel"><h3>Layanan Masuk</h3>${barChart([['Pelaporan Keaktifan',1284,100],['Tanda Lapor/SKT',312,24],['Pendaftaran Ormas Baru',221,17],['Pemutakhiran Data',184,14]])}</article><article class="panel"><h3>Monitoring Tanda Lapor / SKT</h3>${barChart([['Surat Terbit',152,100],['Perlu Koreksi',74,49],['Menunggu Cek',57,38],['Siap Terbit',29,19]])}</article><article class="panel"><h3>Monitoring Keaktifan ORMAS</h3>${barChart([['Laporan Disetujui',1065,100],['Butuh Bukti',126,12],['Menunggu Review',93,9],['Belum Lapor',842,79]])}</article><article class="panel"><h3>Status Kepengurusan</h3>${donut([['Aktif',5106,'#22c55e'],['Akan Berakhir',894,'#fbbf24'],['Kadaluarsa',842,'#ef4444']],'6.842')}</article><article class="panel wide"><h3>Sebaran ORMAS per Wilayah</h3>${vBars(wilayah)}</article></div>${publicOrmasDirectoryTable('admin')}${dashboardTable()}<article class="panel table-panel"><div class="panel-head"><h3>Output Surat / Tanda Lapor Terbaru</h3><button class="outline-btn" onclick="go('#admin-skt-monitor')">Monitoring SKT →</button></div><table><thead><tr><th>No.</th><th>ORMAS</th><th>Nomor Surat</th><th>Tanggal</th><th>Status Output</th><th>Aksi</th></tr></thead><tbody>${suratOutputRows()}</tbody></table></article></div>`;
+}
+
+/* === PATCH: Search, filter, and pagination for public-safe ORMAS directory === */
+if (typeof publicOrmasDirectory !== 'undefined' && publicOrmasDirectory.length < 20) {
+  publicOrmasDirectory.push(
+    {name:'Persatuan Warga Cinta Damai', short:'PWCD', type:'Non Badan Hukum / SKT', field:'Sosial', wilayah:'Senen, Jakarta Pusat', email:'sekretariat@pwcd.or.id', phone:'021-3908821', website:'pwcd.or.id', activity:'Aktif melapor', contact:'Email / Telepon'},
+    {name:'Yayasan Generasi Sehat Jakarta', short:'YGSJ', type:'Badan Hukum', field:'Kesehatan', wilayah:'Matraman, Jakarta Timur', email:'kontak@ygsj.or.id', phone:'021-8592011', website:'ygsj.or.id', activity:'Aktif melapor', contact:'Email / Website'},
+    {name:'Komunitas Pemuda Kreatif Utara', short:'KPKU', type:'Non Badan Hukum / SKT', field:'Kepemudaan', wilayah:'Koja, Jakarta Utara', email:'info@kpku.or.id', phone:'021-4398810', website:'-', activity:'Aktif melapor', contact:'Email / Telepon'},
+    {name:'Forum Kebudayaan Betawi Jakarta', short:'FKBJ', type:'Badan Hukum', field:'Kebudayaan', wilayah:'Setu, Jakarta Timur', email:'sekretariat@fkbj.or.id', phone:'021-8457721', website:'fkbj.or.id', activity:'Aktif melapor', contact:'Email / Website'},
+    {name:'Lembaga Bantuan Sosial Harapan', short:'LBSH', type:'Badan Hukum', field:'Sosial', wilayah:'Kebayoran Baru, Jakarta Selatan', email:'admin@lbsh.or.id', phone:'021-7221031', website:'lbsh.or.id', activity:'Perlu pembaruan laporan', contact:'Email / Telepon'},
+    {name:'Komunitas Relawan Bencana Jakarta', short:'KRBJ', type:'Non Badan Hukum / SKT', field:'Kemanusiaan', wilayah:'Kalideres, Jakarta Barat', email:'relawan@krbj.or.id', phone:'021-5439910', website:'krbj.or.id', activity:'Aktif melapor', contact:'Email / Website'},
+    {name:'Perkumpulan Edukasi Lingkungan Pesisir', short:'PELP', type:'Badan Hukum', field:'Lingkungan', wilayah:'Penjaringan, Jakarta Utara', email:'pesisir@pelp.or.id', phone:'021-6668892', website:'pelp.or.id', activity:'Aktif melapor', contact:'Email / Telepon'},
+    {name:'Majelis Silaturahmi Warga Jakarta', short:'MSWJ', type:'Non Badan Hukum / SKT', field:'Keagamaan', wilayah:'Duren Sawit, Jakarta Timur', email:'majelis@mswj.or.id', phone:'021-8612204', website:'-', activity:'Aktif melapor', contact:'Email'},
+    {name:'Yayasan Literasi Nusantara', short:'YLN', type:'Badan Hukum', field:'Pendidikan', wilayah:'Palmerah, Jakarta Barat', email:'info@yln.or.id', phone:'021-5360012', website:'yln.or.id', activity:'Aktif melapor', contact:'Email / Website'},
+    {name:'Asosiasi Profesi Wirausaha Mandiri', short:'APWM', type:'Badan Hukum', field:'Profesi', wilayah:'Menteng, Jakarta Pusat', email:'sekretariat@apwm.or.id', phone:'021-3191120', website:'apwm.or.id', activity:'Perlu pembaruan laporan', contact:'Email / Telepon'},
+    {name:'Komunitas Sahabat Anak Jakarta', short:'KSAJ', type:'Non Badan Hukum / SKT', field:'Kemanusiaan', wilayah:'Jagakarsa, Jakarta Selatan', email:'hello@ksaj.or.id', phone:'021-7889901', website:'ksaj.or.id', activity:'Aktif melapor', contact:'Email / Website'},
+    {name:'Gerakan Bersih Kali Jakarta', short:'GBKJ', type:'Non Badan Hukum / SKT', field:'Lingkungan', wilayah:'Cilincing, Jakarta Utara', email:'gerakan@gbkj.or.id', phone:'021-4480100', website:'gbkj.or.id', activity:'Aktif melapor', contact:'Email / Telepon'},
+    {name:'Forum Kepemudaan Lenteng Agung', short:'FKLA', type:'Non Badan Hukum / SKT', field:'Kepemudaan', wilayah:'Jagakarsa, Jakarta Selatan', email:'kontak@fkla.or.id', phone:'021-7884500', website:'-', activity:'Aktif melapor', contact:'Email'},
+    {name:'Perkumpulan Seni Budaya Nusantara', short:'PSBN', type:'Badan Hukum', field:'Kebudayaan', wilayah:'Tambora, Jakarta Barat', email:'psbn@budaya.or.id', phone:'021-6903312', website:'psbn.or.id', activity:'Aktif melapor', contact:'Email / Website'},
+    {name:'Yayasan Rumah Belajar Cendekia', short:'YRBC', type:'Badan Hukum', field:'Pendidikan', wilayah:'Cakung, Jakarta Timur', email:'rumahbelajar@yrbc.or.id', phone:'021-4680123', website:'yrbc.or.id', activity:'Aktif melapor', contact:'Email / Website'},
+    {name:'Paguyuban Warga Kepulauan Seribu', short:'PWKS', type:'Non Badan Hukum / SKT', field:'Sosial', wilayah:'Pulau Pramuka, Kepulauan Seribu', email:'sekretariat@pwks.or.id', phone:'021-7070001', website:'-', activity:'Perlu pembaruan laporan', contact:'Email / Telepon'},
+    {name:'Komunitas Kesehatan Remaja Jakarta', short:'KKRJ', type:'Badan Hukum', field:'Kesehatan', wilayah:'Tebet, Jakarta Selatan', email:'remaja@kkrj.or.id', phone:'021-8378200', website:'kkrj.or.id', activity:'Aktif melapor', contact:'Email / Website'},
+    {name:'Lembaga Kajian Demokrasi Kota', short:'LKDK', type:'Badan Hukum', field:'Pendidikan Politik', wilayah:'Tanah Abang, Jakarta Pusat', email:'kajian@lkdk.or.id', phone:'021-3927001', website:'lkdk.or.id', activity:'Aktif melapor', contact:'Email / Telepon'},
+    {name:'Forum Komunikasi Sosial Barat', short:'FKSB', type:'Non Badan Hukum / SKT', field:'Sosial & Kemanusiaan', wilayah:'Kembangan, Jakarta Barat', email:'info@fksb.or.id', phone:'021-5830200', website:'fksb.or.id', activity:'Aktif melapor', contact:'Email / Website'}
+  );
+}
+
+function normalizeTextForDirectory(value){
+  return String(value || '').toLowerCase();
+}
+
+function directoryUniqueValues(key){
+  const values = publicOrmasDirectory.map(item => item[key]).filter(Boolean);
+  return [...new Set(values)].sort((a,b) => a.localeCompare(b, 'id-ID'));
+}
+
+function directoryRegionGroup(wilayah){
+  if(!wilayah) return '';
+  const parts = wilayah.split(',').map(x => x.trim());
+  return parts[parts.length - 1] || wilayah;
+}
+
+function directoryOptionList(values, selected=''){
+  return values.map(v => `<option value="${v}" ${selected === v ? 'selected' : ''}>${v}</option>`).join('');
+}
+
+function getDirectoryState(context){
+  const q = normalizeTextForDirectory(document.getElementById(`directory-search-${context}`)?.value || '');
+  const wilayah = document.getElementById(`directory-wilayah-${context}`)?.value || '';
+  const bidang = document.getElementById(`directory-bidang-${context}`)?.value || '';
+  const jenis = document.getElementById(`directory-jenis-${context}`)?.value || '';
+  const status = document.getElementById(`directory-status-${context}`)?.value || '';
+  const pageSize = Number(document.getElementById(`directory-page-size-${context}`)?.value || 5);
+  const page = Number(document.getElementById(`directory-page-${context}`)?.value || 1);
+  return {q, wilayah, bidang, jenis, status, pageSize, page};
+}
+
+function getFilteredDirectory(context){
+  const state = getDirectoryState(context);
+  return publicOrmasDirectory.filter(o => {
+    const haystack = normalizeTextForDirectory(`${o.name} ${o.short} ${o.type} ${o.field} ${o.wilayah} ${o.email} ${o.phone} ${o.website}`);
+    const matchSearch = !state.q || haystack.includes(state.q);
+    const matchWilayah = !state.wilayah || directoryRegionGroup(o.wilayah) === state.wilayah;
+    const matchBidang = !state.bidang || o.field === state.bidang;
+    const matchJenis = !state.jenis || o.type === state.jenis;
+    const matchStatus = !state.status || (state.status === 'Aktif' ? !o.activity.includes('Perlu') : o.activity.includes('Perlu'));
+    return matchSearch && matchWilayah && matchBidang && matchJenis && matchStatus;
+  });
+}
+
+function renderDirectoryRows(context, page=1){
+  const state = getDirectoryState(context);
+  const filtered = getFilteredDirectory(context);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize));
+  const safePage = Math.min(Math.max(page, 1), totalPages);
+  const start = (safePage - 1) * state.pageSize;
+  const shown = filtered.slice(start, start + state.pageSize);
+  if(!shown.length){
+    return `<tr><td colspan="7" class="empty-directory">Tidak ada ORMAS yang sesuai dengan pencarian/filter.</td></tr>`;
+  }
+  return shown.map((o,i)=>`<tr>
+    <td>${start + i + 1}</td>
+    <td><b>${o.name}</b><br><small>${o.short} • ${o.type}</small></td>
+    <td>${o.field}</td>
+    <td>${o.wilayah}</td>
+    <td><a class="click-link" href="mailto:${o.email}">${o.email}</a><br><small>${o.phone}</small></td>
+    <td>${o.website === '-' ? '-' : `<a class="click-link" href="javascript:void(0)">${o.website}</a>`}</td>
+    <td>${o.activity.includes('Perlu') ? '<span class="pill orange">Perlu Update</span>' : '<span class="pill green">Aktif</span>'}</td>
+  </tr>`).join('');
+}
+
+function renderDirectoryPagination(context, page=1){
+  const state = getDirectoryState(context);
+  const filtered = getFilteredDirectory(context);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize));
+  const safePage = Math.min(Math.max(page, 1), totalPages);
+  const start = filtered.length ? ((safePage - 1) * state.pageSize) + 1 : 0;
+  const end = Math.min(safePage * state.pageSize, filtered.length);
+  const visiblePages = Array.from({length: totalPages}, (_,i) => i + 1).slice(0, 5);
+  const buttons = visiblePages.map(p => `<button class="page-btn ${p === safePage ? 'active' : ''}" onclick="updateDirectory('${context}', ${p})">${p}</button>`).join('');
+  return `<div class="directory-pagination-left">Menampilkan <b>${start}-${end}</b> dari <b>${filtered.length}</b> data</div>
+  <div class="directory-pages">
+    <button class="page-btn" ${safePage === 1 ? 'disabled' : ''} onclick="updateDirectory('${context}', ${safePage - 1})">‹ Sebelumnya</button>
+    ${buttons}
+    <button class="page-btn" ${safePage === totalPages ? 'disabled' : ''} onclick="updateDirectory('${context}', ${safePage + 1})">Berikutnya ›</button>
+  </div>`;
+}
+
+function updateDirectory(context, page=1){
+  const pageInput = document.getElementById(`directory-page-${context}`);
+  if(pageInput) pageInput.value = String(page);
+  const body = document.getElementById(`directory-body-${context}`);
+  const pagination = document.getElementById(`directory-pagination-${context}`);
+  if(body) body.innerHTML = renderDirectoryRows(context, page);
+  if(pagination) pagination.innerHTML = renderDirectoryPagination(context, page);
+}
+
+function resetDirectory(context){
+  [`directory-search-${context}`, `directory-wilayah-${context}`, `directory-bidang-${context}`, `directory-jenis-${context}`, `directory-status-${context}`].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  const pageSize = document.getElementById(`directory-page-size-${context}`);
+  if(pageSize) pageSize.value = '5';
+  updateDirectory(context, 1);
+}
+
+function initDirectoryTables(){
+  ['public','admin'].forEach(context => {
+    if(document.getElementById(`directory-body-${context}`)) updateDirectory(context, 1);
+  });
+}
+
+function publicOrmasDirectoryTable(context='public'){
+  const title = context === 'admin'
+    ? 'Direktori ORMAS Publik yang Tampil di Halaman Masyarakat'
+    : 'Direktori ORMAS Terdata';
+  const subtitle = context === 'admin'
+    ? 'Pegawai dapat meninjau data publik yang ditampilkan ke masyarakat. Gunakan pencarian dan filter untuk mengecek data yang aman dibagikan.'
+    : 'Gunakan pencarian dan filter untuk menemukan ORMAS berdasarkan nama, bidang, wilayah, jenis ORMAS, kontak, atau website.';
+  const wilayahOptions = directoryOptionList(directoryUniqueValues('wilayah').map(directoryRegionGroup).filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,'id-ID')));
+  const bidangOptions = directoryOptionList(directoryUniqueValues('field'));
+  const jenisOptions = directoryOptionList(directoryUniqueValues('type'));
+  return `<article class="panel table-panel public-directory-panel"><div class="panel-head"><div><h3>${title}</h3><p class="muted">${subtitle}</p></div><button class="outline-btn" onclick="toast('Mockup: export direktori publik ORMAS')">Export Direktori</button></div>
+  <div class="directory-toolbar">
+    <label class="directory-search-field">Cari ORMAS / Kontak<input id="directory-search-${context}" type="search" placeholder="Cari nama ORMAS, bidang, wilayah, email, website..." oninput="updateDirectory('${context}', 1)"></label>
+    <label>Wilayah<select id="directory-wilayah-${context}" onchange="updateDirectory('${context}', 1)"><option value="">Semua Wilayah</option>${wilayahOptions}</select></label>
+    <label>Bidang<select id="directory-bidang-${context}" onchange="updateDirectory('${context}', 1)"><option value="">Semua Bidang</option>${bidangOptions}</select></label>
+    <label>Jenis ORMAS<select id="directory-jenis-${context}" onchange="updateDirectory('${context}', 1)"><option value="">Semua Jenis</option>${jenisOptions}</select></label>
+    <label>Status<select id="directory-status-${context}" onchange="updateDirectory('${context}', 1)"><option value="">Semua Status</option><option>Aktif</option><option>Perlu Update</option></select></label>
+    <label>Tampil<select id="directory-page-size-${context}" onchange="updateDirectory('${context}', 1)"><option value="5">5 data</option><option value="10">10 data</option><option value="25">25 data</option></select></label>
+    <button class="outline-btn directory-reset" onclick="resetDirectory('${context}')">Reset</button>
+  </div>
+  <input type="hidden" id="directory-page-${context}" value="1">
+  <div class="table-scroll"><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Bidang</th><th>Wilayah</th><th>Kontak Publik</th><th>Website</th><th>Status Publik</th></tr></thead><tbody id="directory-body-${context}">${renderDirectoryRows(context,1)}</tbody></table></div>
+  <div class="directory-pagination" id="directory-pagination-${context}">${renderDirectoryPagination(context,1)}</div>
+  <div class="public-note"><b>Batasan data publik:</b> tabel ini hanya menampilkan nama ORMAS, bidang, wilayah sekretariat secara umum, email/telepon organisasi, website, dan status publik. Nomor tiket, NIK pengurus, nomor HP pribadi, alamat rumah, dokumen upload, catatan verifikasi, dan status koreksi tidak ditampilkan.</div></article>`;
+}
+
+const __previousRenderWithDirectory = render;
+render = function(){
+  __previousRenderWithDirectory();
+  initDirectoryTables();
+};
+setTimeout(render, 0);
