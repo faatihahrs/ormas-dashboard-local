@@ -1,19 +1,15 @@
-# Prototype BAKESBANGPOL ORMAS — Login & Pemutakhiran/SKT
+# Prototype Dashboard ORMAS BAKESBANGPOL
 
-Static HTML/CSS/JavaScript prototype.
+Versi ini memisahkan alur pegawai menjadi:
 
-## Perubahan utama
-
-- Dashboard ORMAS dan seluruh menu mandiri ORMAS dilindungi login.
-- Tujuan login dipertahankan: login pendaftaran menuju `#application`, login Dashboard ORMAS menuju `#ormas-dashboard`.
-- Menu Pengajuan Perubahan Data memakai Formulir Pemutakhiran Data Lapor Keberadaan ORMAS 7 bagian.
-- ORMAS Non Badan Hukum dapat memilih Perpanjangan/Pembaruan SKT setelah sudah terdaftar.
-- Monitoring Pendaftaran pegawai menampilkan pemutakhiran data dan pemeriksaan persyaratan.
-- Pegawai dapat menyetujui data, mengunggah file PDF SKT/surat, mengisi nomor dan tanggal terbit.
-- File yang diterbitkan muncul pada menu Dokumen & Surat di Dashboard ORMAS.
+1. **Dashboard Pegawai** — pusat kendali dan prioritas pekerjaan.
+2. **Monitoring Pendaftaran** — hanya pendaftaran awal ORMAS:
+   - Badan Hukum: Pelaporan Keberadaan ORMAS.
+   - Non Badan Hukum: Pendaftaran Organisasi untuk memperoleh SKT.
+3. **Monitoring Update Data / SKT** — seluruh layanan setelah pendaftaran disetujui, termasuk pemutakhiran data, perubahan pengurus/alamat/legalitas, pembaruan/perpanjangan SKT, penerbitan ulang, dan unggah dokumen hasil verifikasi.
+4. **Monitoring Keaktifan** — verifikasi satu laporan untuk satu kegiatan dengan maksimal tiga foto.
+5. **Direktori ORMAS** — profil lengkap dan riwayat pendaftaran, update, serta kegiatan.
 
 ## Menjalankan
 
-Buka `index.html` langsung atau unggah `index.html` dan folder `assets` ke GitHub Pages.
-
-Akun login pada prototype menerima nilai contoh yang sudah terisi. Data hanya disimpan selama sesi halaman berjalan.
+Buka `index.html` langsung di browser atau unggah `index.html` dan folder `assets` ke root GitHub Pages.

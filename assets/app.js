@@ -2450,7 +2450,7 @@ ormasChangeRequestPageV8 = function () {
       <div class="skt-form-section-v9"><span>Bagian 5 dari 7</span><h3>4. Alamat Kantor / Sekretariat</h3><div class="form-grid"><div class="field col4"><label>Alamat / Jalan Kantor Sekretariat</label><textarea id="updateAddressV9" required>${org.address}</textarea></div><div class="field col2"><label>Kota / Kabupaten</label><select id="updateCityV9" required>${['Jakarta Pusat','Jakarta Utara','Jakarta Barat','Jakarta Selatan','Jakarta Timur','Kepulauan Seribu','Lainnya'].map(item => `<option ${org.region === item ? 'selected' : ''}>${item}</option>`).join('')}</select></div><div class="field col2"><label>Kode Pos</label><input id="updatePostalCodeV9" value="10110"></div><div class="field col2"><label>Nomor Telepon Kantor/HP</label><input id="updateOfficePhoneV9" required value="${org.phone}"></div><div class="field col2"><label>Email Organisasi</label><input id="updateOrgEmailV9" type="email" required value="${org.email}"></div></div></div>
       <div class="skt-form-section-v9"><span>Bagian 6 dari 7</span><h3>5. Legalitas dan Keabsahan Dokumen</h3><div class="form-grid"><div class="field col4"><label>Nomor AHU / SK Kemenkumham</label><input id="updateAhuNumberV9" value="${!org.orgType.includes('Non Badan') ? org.legalNumber : ''}" placeholder="Kosongkan jika tidak memiliki AHU/SK Kemenkumham"></div><div class="field col2"><label>SK Kemenkumham/AHU</label><input id="updateAhuFileV9" type="file" accept="application/pdf,image/*"><small>Diunggah jika memiliki atau terdapat perubahan dokumen legalitas.</small></div><div class="field col2"><label>SK Kepengurusan Organisasi Terbaru</label><input id="updateManagementFileV9" type="file" accept="application/pdf,image/*" required><small>Wajib untuk pemutakhiran data/pembaruan SKT.</small></div></div></div>
       <div class="skt-form-section-v9"><span>Bagian 7 dari 7</span><h3>6. Review dan Submit</h3><div class="review-card"><label class="check-item"><input id="updateConfirmationV9" type="checkbox" required> Saya menyatakan bahwa seluruh data dan dokumen yang diinput adalah benar dan dapat dipertanggungjawabkan.</label></div><div class="form-action-line"><button type="button" class="outline-btn" onclick="go('#ormas-dashboard')">Kembali</button><button type="submit" class="primary-btn">Kirim Pemutakhiran Data</button></div></div>
-    </form></article><aside class="panel"><h3>Riwayat Pemutakhiran</h3><p class="muted">Pengajuan masuk ke menu Monitoring Pendaftaran pegawai.</p><div class="ormas-change-history-v8">${requests.length ? requests.map(item => `<div><small>${item.id} • ${dateLabelV6(item.date)}</small><b>${item.type}</b><p>${item.note}</p>${ormasStatusBadgeV8(item.status)}</div>`).join('') : '<p class="muted">Belum ada pengajuan perubahan.</p>'}</div><div class="skt-process-note-v9"><b>Alur setelah submit</b><ol><li>Pegawai memeriksa data dan dokumen.</li><li>Jika belum lengkap, ORMAS menerima catatan perbaikan.</li><li>Jika disetujui, pegawai mengunggah SKT atau surat hasil pemutakhiran.</li><li>Dokumen tersedia pada menu Dokumen & Surat.</li></ol></div></aside></div>`;
+    </form></article><aside class="panel"><h3>Riwayat Pemutakhiran</h3><p class="muted">Pengajuan masuk ke menu Monitoring Update Data / SKT pegawai.</p><div class="ormas-change-history-v8">${requests.length ? requests.map(item => `<div><small>${item.id} • ${dateLabelV6(item.date)}</small><b>${item.type}</b><p>${item.note}</p>${ormasStatusBadgeV8(item.status)}</div>`).join('') : '<p class="muted">Belum ada pengajuan perubahan.</p>'}</div><div class="skt-process-note-v9"><b>Alur setelah submit</b><ol><li>Pegawai memeriksa data dan dokumen.</li><li>Jika belum lengkap, ORMAS menerima catatan perbaikan.</li><li>Jika disetujui, pegawai mengunggah SKT atau surat hasil pemutakhiran.</li><li>Dokumen tersedia pada menu Dokumen & Surat.</li></ol></div></aside></div>`;
   return ormasShellV8(content, 'changes');
 };
 
@@ -2508,7 +2508,7 @@ window.submitOrmasSktUpdateV9 = function (event) {
   applicationRequestsV6.unshift(request);
   selectedApplicationIdV6 = id;
   ormasChangeRequestsV8.unshift({ id, org: request.org, type: serviceType, date: request.date, status: request.status, note: `Pemutakhiran data periode ${request.managementStartYear}–${request.managementEndYear}.` });
-  toast('Pemutakhiran data dikirim dan masuk ke Monitoring Pendaftaran pegawai.');
+  toast('Pemutakhiran data dikirim dan masuk ke Monitoring Update Data / SKT pegawai.');
   go('#ormas-history');
 };
 
@@ -2692,4 +2692,263 @@ render = function () {
   renderBeforeV9();
 };
 
+setTimeout(render, 0);
+
+/* === FINAL PATCH V10: Pisahkan Pendaftaran Awal dan Layanan Setelah Terdaftar ===
+   Monitoring Pendaftaran hanya untuk proses awal:
+   - Badan Hukum: Pelaporan Keberadaan ORMAS
+   - Non Badan Hukum: Pendaftaran Organisasi untuk memperoleh SKT
+
+   Semua layanan setelah pendaftaran disetujui masuk ke Monitoring Update Data / SKT:
+   pemutakhiran profil, perubahan pengurus/alamat/legalitas, pembaruan/perpanjangan SKT,
+   penerbitan ulang, serta unggah dokumen hasil verifikasi.
+*/
+
+function isInitialRegistrationV10(item) {
+  if (!item) return false;
+  if ((item.submissionKind || '').toLowerCase() === 'data-update-skt') return false;
+  const type = (item.requestType || '').toLowerCase();
+  return type.includes('pendaftaran organisasi') ||
+    type.includes('pendaftaran ormas') ||
+    type.includes('pendaftaran baru') ||
+    type.includes('pelaporan keberadaan');
+}
+
+function isPostRegistrationUpdateV10(item) {
+  return Boolean(item) && !isInitialRegistrationV10(item);
+}
+
+function initialRegistrationItemsV10() {
+  return applicationRequestsV6.filter(isInitialRegistrationV10);
+}
+
+function postRegistrationUpdateItemsV10() {
+  return applicationRequestsV6.filter(isPostRegistrationUpdateV10);
+}
+
+function needsActionV10(item) {
+  return !['Disetujui', 'Selesai', 'Ditolak'].includes(item.status);
+}
+
+adminShell = function (content, active = 'dashboard') {
+  const selectedItem = applicationRequestsV6.find(entry => entry.id === selectedApplicationIdV6);
+  if (active === 'applications' && location.hash === '#admin-application-detail' && isPostRegistrationUpdateV10(selectedItem)) {
+    active = 'updates';
+  }
+  const titles = {
+    dashboard: ['Dashboard Pegawai', 'Pusat kendali pekerjaan pendaftaran, update data/SKT, dan pelaporan keaktifan'],
+    applications: ['Monitoring Pendaftaran', 'Khusus pengajuan awal ORMAS sebelum terdaftar dan disetujui'],
+    updates: ['Monitoring Update Data / SKT', 'Seluruh layanan setelah ORMAS selesai pendaftaran'],
+    reports: ['Monitoring Keaktifan', 'Verifikasi laporan kegiatan yang disampaikan ORMAS'],
+    directory: ['Direktori ORMAS', 'Profil lengkap dan riwayat ORMAS yang telah terdaftar']
+  };
+  const [title, subtitle] = titles[active] || titles.dashboard;
+  return `<div class="app-shell">
+    <aside class="sidebar">
+      <div class="side-brand">${logoHtml()}</div>
+      <nav class="side-nav">
+        <span class="side-nav-label">MENU PEGAWAI</span>
+        <a class="${active === 'dashboard' ? 'active' : ''}" href="#admin-dashboard">Dashboard Pegawai</a>
+        <a class="${active === 'applications' ? 'active' : ''}" href="#admin-applications">Monitoring Pendaftaran</a>
+        <a class="${active === 'updates' ? 'active' : ''}" href="#admin-updates">Monitoring Update Data / SKT</a>
+        <a class="${active === 'reports' ? 'active' : ''}" href="#admin-reports">Monitoring Keaktifan</a>
+        <a class="${active === 'directory' ? 'active' : ''}" href="#admin-directory">Direktori ORMAS</a>
+      </nav>
+      <div class="side-user"><b>Administrator</b><small>BAKESBANGPOL DKI Jakarta</small></div>
+    </aside>
+    <section class="admin-content">
+      <header class="admin-topbar"><div><h1>${title}</h1><p>${subtitle}</p></div><button class="btn" onclick="go('#home')">Logout</button></header>
+      <main class="admin-main">${content}</main>
+    </section>
+  </div>`;
+};
+
+adminApplicationRowsNeedingActionV6 = function () {
+  const items = initialRegistrationItemsV10().filter(needsActionV10);
+  return items.length ? applicationRowsV6(items) : '<tr><td colspan="9" class="empty-state-v6">Tidak ada pendaftaran awal yang perlu ditindaklanjuti.</td></tr>';
+};
+
+function adminUpdateRowsV10(items = postRegistrationUpdateItemsV10()) {
+  if (!items.length) return '<tr><td colspan="9" class="empty-state-v6">Belum ada permohonan update data/SKT.</td></tr>';
+  return items.map(item => `<tr>
+    <td><a class="click-link" onclick="openAdminApplicationV6('${item.id}')">${item.id}</a></td>
+    <td>${dateLabelV6(item.date)}</td>
+    <td><b>${item.org}</b><br><small>${item.orgType}</small></td>
+    <td><b>${item.requestType}</b><br><small>${item.submissionKind === 'data-update-skt' ? 'Layanan setelah pendaftaran' : 'Pemutakhiran data terdaftar'}</small></td>
+    <td>${item.region || '-'}</td>
+    <td>${registrationStatusBadgeV6(item.status)}</td>
+    <td><span class="photo-count">📎 ${(item.documents || []).length} dokumen</span></td>
+    <td>${outputStatusV9(item)}</td>
+    <td><button class="btn tiny" onclick="openAdminApplicationV6('${item.id}')">${['Siap Penerbitan SKT', 'Siap Unggah Surat'].includes(item.status) ? 'Unggah Output' : 'Periksa'}</button></td>
+  </tr>`).join('');
+}
+
+adminApplicationsPageV6 = function () {
+  const items = initialRegistrationItemsV10();
+  const content = `<div class="workflow-separation-v10">
+      <div><span class="pill blue">Tahap Awal</span><h2>Monitoring Pendaftaran ORMAS</h2><p>Halaman ini hanya untuk pendaftaran pertama kali. Setelah pengajuan disetujui, seluruh permohonan berikutnya diproses pada <b>Monitoring Update Data / SKT</b>.</p></div>
+      <button class="outline-btn" onclick="go('#admin-updates')">Buka Monitoring Update Data / SKT →</button>
+    </div>
+    <article class="panel table-panel"><div class="panel-head"><div><h3>Daftar Pendaftaran Awal</h3><p class="muted">Badan Hukum: Pelaporan Keberadaan. Non Badan Hukum: Pendaftaran Organisasi untuk memperoleh SKT.</p></div><button class="outline-btn" onclick="toast('Simulasi export data pendaftaran awal')">Export Excel</button></div>
+      <div class="admin-filter-row application-filter-v6"><label>Pencarian<input id="adminApplicationSearchV6" placeholder="Nama ORMAS / nomor pengajuan" oninput="renderAdminApplicationsV6()"></label><label>Jenis ORMAS<select id="adminApplicationTypeV6" onchange="renderAdminApplicationsV6()"><option value="">Semua Jenis</option><option>Badan Hukum</option><option>Non Badan Hukum / SKT</option></select></label><label>Status<select id="adminApplicationStatusV6" onchange="renderAdminApplicationsV6()"><option value="">Semua Status</option><option>Menunggu Verifikasi</option><option>Perlu Perbaikan</option><option>Disetujui</option><option>Ditolak</option></select></label></div>
+      <div class="table-scroll"><table><thead><tr><th>No. Pengajuan</th><th>Tanggal</th><th>Nama ORMAS</th><th>Jenis ORMAS</th><th>Proses Awal</th><th>Wilayah</th><th>Status</th><th>Persyaratan</th><th>Aksi</th></tr></thead><tbody id="adminApplicationsBodyV6">${items.length ? applicationRowsV6(items) : '<tr><td colspan="9" class="empty-state-v6">Belum ada pendaftaran awal.</td></tr>'}</tbody></table></div>
+    </article>`;
+  return adminShell(content, 'applications');
+};
+
+window.renderAdminApplicationsV6 = function () {
+  const q = ($('#adminApplicationSearchV6')?.value || '').toLowerCase();
+  const type = $('#adminApplicationTypeV6')?.value || '';
+  const status = $('#adminApplicationStatusV6')?.value || '';
+  const items = initialRegistrationItemsV10().filter(item =>
+    (!q || `${item.id} ${item.org} ${item.requestType}`.toLowerCase().includes(q)) &&
+    (!type || item.orgType === type) &&
+    (!status || item.status === status)
+  );
+  const body = $('#adminApplicationsBodyV6');
+  if (body) body.innerHTML = items.length ? applicationRowsV6(items) : '<tr><td colspan="9" class="empty-state-v6">Data pendaftaran tidak ditemukan.</td></tr>';
+};
+
+function registeredOrmasLifecycleRowsV10() {
+  const approvedInitial = initialRegistrationItemsV10().filter(item => item.status === 'Disetujui');
+  const names = new Set(approvedInitial.map(item => item.org));
+  const lifecycleItems = publicDirectory.filter(item => names.has(item.name) || !approvedInitial.length).slice(0, 8);
+  if (!lifecycleItems.length) return '<tr><td colspan="7" class="empty-state-v6">Belum ada ORMAS yang selesai pendaftaran.</td></tr>';
+  return lifecycleItems.map((item, index) => {
+    const profile = getOrmasProfileV7(item.name);
+    const updates = postRegistrationUpdateItemsV10().filter(request => request.org === item.name).length;
+    return `<tr class="clickable-row-v7" onclick="openAdminOrmasV7('${item.name.replace(/'/g, "\\'")}')"><td>${index + 1}</td><td><b>${item.name}</b><br><small>${profile.orgType}</small></td><td>${item.region}</td><td>${statusBadge(item.status)}</td><td>${updates}</td><td><small>Update profil, pengurus, alamat, legalitas, SKT/surat, dan dokumen</small></td><td><button class="btn tiny" onclick="event.stopPropagation();openAdminOrmasV7('${item.name.replace(/'/g, "\\'")}')">Lihat Riwayat</button></td></tr>`;
+  }).join('');
+}
+
+function adminUpdatesPageV10() {
+  const updates = postRegistrationUpdateItemsV10();
+  const content = `<div class="workflow-separation-v10 update-flow-v10">
+      <div><span class="pill orange">Setelah Terdaftar</span><h2>Monitoring Update Data / SKT</h2><p>Semua layanan selain pendaftaran awal dan pelaporan kegiatan masuk ke sini: pemutakhiran data, perubahan pengurus/alamat/legalitas, perpanjangan atau pembaruan SKT, penerbitan ulang, serta unggah dokumen hasil verifikasi.</p></div>
+      <button class="outline-btn" onclick="go('#admin-applications')">Lihat Pendaftaran Awal</button>
+    </div>
+    <div class="kpi-grid admin-kpis synced-kpis-v6">
+      ${kpi('Total Permohonan Update', updates.length, 'Seluruh layanan pascapendaftaran', 'blue', '↻')}
+      ${kpi('Menunggu Verifikasi', updates.filter(item => item.status === 'Menunggu Verifikasi').length, 'Perlu pemeriksaan data', 'yellow', '⏳')}
+      ${kpi('Perlu Perbaikan', updates.filter(item => item.status === 'Perlu Perbaikan').length, 'Menunggu perbaikan ORMAS', 'red', '⚠')}
+      ${kpi('Siap Unggah Output', updates.filter(item => ['Siap Penerbitan SKT','Siap Unggah Surat'].includes(item.status)).length, 'SKT/surat perlu diterbitkan', 'orange', '📄')}
+      ${kpi('Selesai', updates.filter(item => item.status === 'Disetujui').length, 'Dokumen tersedia di Dashboard ORMAS', 'green', '✓')}
+    </div>
+    <article class="panel table-panel"><div class="panel-head"><div><h3>Permohonan Update Data / SKT</h3><p class="muted">Daftar pekerjaan setelah ORMAS memiliki status pendaftaran yang disetujui.</p></div><button class="outline-btn" onclick="toast('Simulasi export data update/SKT')">Export Excel</button></div>
+      <div class="admin-filter-row application-filter-v6"><label>Pencarian<input id="adminUpdateSearchV10" placeholder="Nama ORMAS / nomor permohonan" oninput="renderAdminUpdatesV10()"></label><label>Jenis Layanan<select id="adminUpdateTypeV10" onchange="renderAdminUpdatesV10()"><option value="">Semua Layanan</option><option value="pemutakhiran">Pemutakhiran Data</option><option value="perubahan">Perubahan Data/Pengurus</option><option value="skt">Pembaruan/Perpanjangan SKT</option><option value="surat">Surat Hasil Pemutakhiran</option></select></label><label>Status<select id="adminUpdateStatusV10" onchange="renderAdminUpdatesV10()"><option value="">Semua Status</option><option>Menunggu Verifikasi</option><option>Perlu Perbaikan</option><option>Siap Penerbitan SKT</option><option>Siap Unggah Surat</option><option>Disetujui</option><option>Ditolak</option></select></label></div>
+      <div class="table-scroll"><table><thead><tr><th>No. Permohonan</th><th>Tanggal</th><th>ORMAS</th><th>Jenis Layanan</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>Output</th><th>Aksi</th></tr></thead><tbody id="adminUpdatesBodyV10">${adminUpdateRowsV10(updates)}</tbody></table></div>
+    </article>
+    <article class="panel table-panel"><div class="panel-head"><div><h3>ORMAS yang Telah Selesai Pendaftaran</h3><p class="muted">Setelah disetujui, layanan selanjutnya dikelola melalui Monitoring Update Data / SKT dan Profil ORMAS.</p></div><button class="outline-btn" onclick="go('#admin-directory')">Buka Direktori ORMAS</button></div><div class="table-scroll"><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Wilayah</th><th>Status</th><th>Riwayat Update</th><th>Layanan Berikutnya</th><th>Aksi</th></tr></thead><tbody>${registeredOrmasLifecycleRowsV10()}</tbody></table></div></article>`;
+  return adminShell(content, 'updates');
+}
+
+window.renderAdminUpdatesV10 = function () {
+  const q = ($('#adminUpdateSearchV10')?.value || '').toLowerCase();
+  const type = ($('#adminUpdateTypeV10')?.value || '').toLowerCase();
+  const status = $('#adminUpdateStatusV10')?.value || '';
+  const items = postRegistrationUpdateItemsV10().filter(item => {
+    const text = `${item.id} ${item.org} ${item.requestType} ${item.outputLabel || ''}`.toLowerCase();
+    return (!q || text.includes(q)) && (!type || text.includes(type)) && (!status || item.status === status);
+  });
+  const body = $('#adminUpdatesBodyV10');
+  if (body) body.innerHTML = adminUpdateRowsV10(items);
+};
+
+const adminApplicationDetailBeforeV10 = adminApplicationDetailV6;
+adminApplicationDetailV6 = function () {
+  const item = applicationRequestsV6.find(entry => entry.id === selectedApplicationIdV6);
+  let html = adminApplicationDetailBeforeV10();
+  if (isPostRegistrationUpdateV10(item)) {
+    html = html.replaceAll('href="#admin-applications"', 'href="#admin-updates"')
+      .replaceAll("go('#admin-applications')", "go('#admin-updates')")
+      .replace('Monitoring Pendaftaran', 'Monitoring Update Data / SKT');
+  }
+  return html;
+};
+
+workQueueRowsV7 = function () {
+  const registration = initialRegistrationItemsV10().find(needsActionV10);
+  const readyOutput = postRegistrationUpdateItemsV10().find(item => ['Siap Penerbitan SKT', 'Siap Unggah Surat'].includes(item.status));
+  const pendingUpdate = postRegistrationUpdateItemsV10().find(item => ['Menunggu Verifikasi', 'Perlu Perbaikan'].includes(item.status));
+  const pendingActivity = activityReports.find(item => item.status === 'Menunggu Verifikasi');
+  const rows = [
+    registration ? { priority: 'Tinggi', service: 'Monitoring Pendaftaran', org: registration.org, task: `Periksa ${registration.requestType} dan dokumen awal`, updated: 'Baru saja', due: 'Hari ini', action: `openAdminApplicationV6('${registration.id}')` } : null,
+    readyOutput ? { priority: 'Tinggi', service: 'Monitoring Update Data / SKT', org: readyOutput.org, task: `${readyOutput.outputStatus}. Unggah ${readyOutput.outputLabel}.`, updated: '5 menit lalu', due: 'Hari ini', action: `openAdminApplicationV6('${readyOutput.id}')` } : null,
+    pendingUpdate ? { priority: 'Tinggi', service: 'Monitoring Update Data / SKT', org: pendingUpdate.org, task: `Tindak lanjuti ${pendingUpdate.requestType}`, updated: '10 menit lalu', due: 'Hari ini', action: `openAdminApplicationV6('${pendingUpdate.id}')` } : null,
+    pendingActivity ? { priority: 'Sedang', service: 'Monitoring Keaktifan', org: pendingActivity.org, task: `Verifikasi foto dan keterangan ${pendingActivity.activity}`, updated: '25 menit lalu', due: 'Besok', action: `openAdminReport('${pendingActivity.id}')` } : null,
+    { priority: 'Rendah', service: 'Direktori ORMAS', org: 'Forum Pemuda Betawi Bersatu', task: 'Tinjau profil, riwayat update, dan laporan kegiatan', updated: 'Kemarin', due: '3 hari', action: "openAdminOrmasV7('Forum Pemuda Betawi Bersatu')" }
+  ].filter(Boolean);
+  return rows.map((item, index) => `<tr><td>${index + 1}</td><td>${urgencyBadgeV7(item.priority)}</td><td><b>${item.service}</b></td><td><button class="link-button-v7" onclick="openAdminOrmasV7('${item.org.replace(/'/g, "\\'")}')">${item.org}</button><br><small>${item.task}</small></td><td>${item.updated}</td><td><b>${item.due}</b></td><td><button class="btn tiny" onclick="${item.action}">Kerjakan</button></td></tr>`).join('');
+};
+
+operationalSummaryV7 = function () {
+  const registrations = initialRegistrationItemsV10().filter(needsActionV10).length;
+  const updates = postRegistrationUpdateItemsV10().filter(needsActionV10).length;
+  const readyOutputs = postRegistrationUpdateItemsV10().filter(item => ['Siap Penerbitan SKT', 'Siap Unggah Surat'].includes(item.status)).length;
+  const activities = activityReports.filter(item => item.status === 'Menunggu Verifikasi').length;
+  return `<div class="work-summary-grid-v7 five-cards-v10">
+    <button class="work-summary-v7 urgent" onclick="go('#admin-applications')"><span>Pendaftaran awal</span><b>${registrations}</b><small>Pengajuan pertama yang perlu diperiksa</small></button>
+    <button class="work-summary-v7 warning" onclick="go('#admin-updates')"><span>Update data / SKT</span><b>${updates}</b><small>Layanan setelah ORMAS terdaftar</small></button>
+    <button class="work-summary-v7 warning" onclick="go('#admin-updates')"><span>Output siap diunggah</span><b>${readyOutputs}</b><small>SKT/surat perlu diterbitkan</small></button>
+    <button class="work-summary-v7 danger" onclick="go('#admin-reports')"><span>Laporan kegiatan</span><b>${activities}</b><small>Foto dan keterangan perlu ditinjau</small></button>
+    <button class="work-summary-v7 success" onclick="go('#admin-directory')"><span>Profil ORMAS</span><b>${publicDirectory.length}</b><small>Lihat riwayat lengkap organisasi</small></button>
+  </div>`;
+};
+
+recentActivityTimelineV7 = function () {
+  const events = [
+    ['10:42', 'Pembaruan SKT siap diterbitkan', 'Yayasan Peduli Pendidikan Anak Bangsa • masuk Monitoring Update Data / SKT'],
+    ['10:35', 'Laporan keaktifan baru masuk', 'Komunitas Lingkungan Hijau Jakarta • Aksi Bersih Pesisir'],
+    ['10:02', 'Pemutakhiran data meminta perbaikan', 'Dokumen SK kepengurusan terbaru perlu diperbarui'],
+    ['09:40', 'Pendaftaran awal disetujui', 'Forum Pemuda Betawi Bersatu • layanan berikutnya masuk Monitoring Update'],
+    ['09:15', 'Laporan kegiatan disetujui', 'Yayasan Peduli Pendidikan Anak Bangsa • Kelas Literasi Anak']
+  ];
+  return `<div class="activity-feed-v7">${events.map((item, index) => `<div class="activity-feed-item-v7"><span class="activity-dot-v7 ${index < 3 ? 'alert' : ''}"></span><div><small>${item[0]}</small><b>${item[1]}</b><p>${item[2]}</p></div></div>`).join('')}</div>`;
+};
+
+adminDashboard = function () {
+  const registrations = initialRegistrationItemsV10();
+  const updates = postRegistrationUpdateItemsV10();
+  const pendingRegistration = registrations.filter(needsActionV10).length;
+  const pendingUpdates = updates.filter(needsActionV10).length;
+  const pendingActivities = activityReports.filter(item => item.status === 'Menunggu Verifikasi').length;
+  const readyOutputs = updates.filter(item => ['Siap Penerbitan SKT', 'Siap Unggah Surat'].includes(item.status)).length;
+  const content = `<section class="work-center-v7">
+      <div class="work-center-head-v7"><div><span class="pill cyan">Pusat Kendali Pegawai</span><h2>Apa yang perlu dikerjakan hari ini?</h2><p>Pekerjaan dipisahkan jelas antara pendaftaran awal, layanan setelah terdaftar, dan verifikasi kegiatan.</p></div><div class="work-center-date-v7"><small>Selasa</small><b>22 Juli 2026</b><span>Data simulasi prototype</span></div></div>
+      ${operationalSummaryV7()}
+      <div class="work-center-grid-v7"><article class="panel table-panel"><div class="panel-head"><div><h3>Tugas Berikutnya</h3><p class="muted">Daftar prioritas lintas menu pegawai.</p></div></div><div class="table-scroll"><table><thead><tr><th>No.</th><th>Prioritas</th><th>Menu</th><th>ORMAS & Tugas</th><th>Pembaruan</th><th>Target</th><th>Aksi</th></tr></thead><tbody>${workQueueRowsV7()}</tbody></table></div></article><article class="panel"><div class="panel-head"><div><h3>Aktivitas Terbaru</h3><p class="muted">Perubahan sistem yang perlu diketahui pegawai.</p></div></div>${recentActivityTimelineV7()}</article></div>
+    </section>
+    <div class="section-divider-title-v7"><div><h2>Ringkasan Alur Layanan</h2><p>Pendaftaran hanya untuk tahap awal. Semua layanan setelah disetujui masuk ke Monitoring Update Data / SKT.</p></div></div>
+    <div class="kpi-grid admin-kpis synced-kpis-v6">
+      ${kpi('Pendaftaran Awal', registrations.length, `${pendingRegistration} perlu ditindaklanjuti`, 'blue', '🏢')}
+      ${kpi('Update Data / SKT', updates.length, `${pendingUpdates} perlu ditindaklanjuti`, 'yellow', '↻')}
+      ${kpi('Output Siap Diunggah', readyOutputs, 'SKT/surat menunggu pegawai', 'orange', '📄')}
+      ${kpi('Pelaporan Keaktifan', activityReports.length, `${pendingActivities} menunggu verifikasi`, 'green', '📷')}
+      ${kpi('Direktori ORMAS', publicDirectory.length, 'Profil dan riwayat terintegrasi', 'green', '●')}
+    </div>
+    <div class="admin-sync-grid-v6 three-flow-grid-v10">
+      <article class="panel"><div class="panel-head"><div><h3>1. Pendaftaran Awal</h3><p class="muted">Pengajuan pertama sebelum ORMAS terdaftar.</p></div><button class="outline-btn" onclick="go('#admin-applications')">Monitoring Pendaftaran</button></div>${horizontalBars([{name:'Menunggu',total:pendingRegistration},{name:'Disetujui',total:registrations.filter(item=>item.status==='Disetujui').length}])}</article>
+      <article class="panel"><div class="panel-head"><div><h3>2. Update Data / SKT</h3><p class="muted">Semua layanan setelah pendaftaran disetujui.</p></div><button class="outline-btn" onclick="go('#admin-updates')">Monitoring Update</button></div>${horizontalBars([{name:'Perlu Proses',total:pendingUpdates},{name:'Siap Output',total:readyOutputs},{name:'Selesai',total:updates.filter(item=>item.status==='Disetujui').length}])}</article>
+      <article class="panel"><div class="panel-head"><div><h3>3. Pelaporan Keaktifan</h3><p class="muted">Satu laporan untuk satu kegiatan.</p></div><button class="outline-btn" onclick="go('#admin-reports')">Monitoring Keaktifan</button></div>${horizontalBars([{name:'Menunggu',total:pendingActivities},{name:'Disetujui',total:activityReports.filter(item=>item.status==='Disetujui').length}])}</article>
+    </div>
+    <div class="admin-sync-grid-v6">
+      <article class="panel table-panel"><div class="panel-head"><div><h3>Pendaftaran Awal Perlu Diproses</h3><p class="muted">Hanya proses awal ORMAS.</p></div><button class="outline-btn" onclick="go('#admin-applications')">Lihat Semua</button></div><div class="table-scroll"><table><thead><tr><th>No.</th><th>ORMAS</th><th>Proses</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${registrations.filter(needsActionV10).slice(0,4).map(item=>`<tr><td>${item.id}</td><td><b>${item.org}</b></td><td>${item.requestType}</td><td>${registrationStatusBadgeV6(item.status)}</td><td><button class="btn tiny" onclick="openAdminApplicationV6('${item.id}')">Periksa</button></td></tr>`).join('') || '<tr><td colspan="5">Tidak ada pekerjaan.</td></tr>'}</tbody></table></div></article>
+      <article class="panel table-panel"><div class="panel-head"><div><h3>Update Data / SKT Perlu Diproses</h3><p class="muted">Permohonan pascapendaftaran.</p></div><button class="outline-btn" onclick="go('#admin-updates')">Lihat Semua</button></div><div class="table-scroll"><table><thead><tr><th>No.</th><th>ORMAS</th><th>Layanan</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${updates.filter(needsActionV10).slice(0,4).map(item=>`<tr><td>${item.id}</td><td><b>${item.org}</b></td><td>${item.requestType}</td><td>${registrationStatusBadgeV6(item.status)}</td><td><button class="btn tiny" onclick="openAdminApplicationV6('${item.id}')">Periksa</button></td></tr>`).join('') || '<tr><td colspan="5">Tidak ada pekerjaan.</td></tr>'}</tbody></table></div></article>
+    </div>
+    <article class="panel table-panel"><div class="panel-head"><div><h3>Direktori ORMAS — Akses Cepat</h3><p class="muted">Klik ORMAS untuk melihat profil, riwayat pendaftaran, update data/SKT, dan kegiatan.</p></div><button class="outline-btn" onclick="go('#admin-directory')">Buka Direktori</button></div><div class="table-scroll"><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Ketua</th><th>Wilayah</th><th>Bidang</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${adminQuickDirectoryRowsV7()}</tbody></table></div></article>`;
+  return adminShell(content, 'dashboard');
+};
+
+const renderBeforeV10 = render;
+render = function () {
+  const route = location.hash || '#home';
+  if (route === '#admin-updates') {
+    app.innerHTML = adminUpdatesPageV10();
+    window.scrollTo(0, 0);
+    return;
+  }
+  renderBeforeV10();
+};
+
+window.addEventListener('hashchange', () => setTimeout(render, 0));
 setTimeout(render, 0);
