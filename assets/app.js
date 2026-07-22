@@ -1405,11 +1405,7 @@ function adminShell(content, active = 'dashboard') {
         <a class="${active === 'dashboard' ? 'active' : ''}" href="#admin-dashboard">Dashboard Pegawai</a>
         <a class="${active === 'applications' ? 'active' : ''}" href="#admin-applications">Monitoring Pendaftaran</a>
         <a class="${active === 'reports' ? 'active' : ''}" href="#admin-reports">Monitoring Keaktifan</a>
-        <div class="side-nav-divider"></div>
-        <span class="side-nav-label">TAUTAN LAIN</span>
-        <a href="#admin-directory">Direktori ORMAS</a>
-        <a href="#public-dashboard">Dashboard Publik</a>
-        <a href="#home">Halaman Depan</a>
+        <a class="${active === 'directory' ? 'active' : ''}" href="#admin-directory">Direktori ORMAS</a>
       </nav>
       <div class="side-user"><b>Administrator</b><small>BAKESBANGPOL DKI Jakarta</small></div>
     </aside>
