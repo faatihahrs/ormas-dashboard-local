@@ -1,278 +1,939 @@
-const $ = (sel, root=document) => root.querySelector(sel);
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const app = $('#app');
-let currentOrmasType = 'badan-hukum';
 
-const COLORS = {blue:'#5371ff', cyan:'#34dcdb', green:'#12b76a', yellow:'#f79009', red:'#f04438', ink:'#101828'};
-const wilayah = [
-  ['Jakarta Pusat',1205,82], ['Jakarta Utara',1340,91], ['Jakarta Barat',1450,98],
-  ['Jakarta Selatan',1210,82], ['Jakarta Timur',1460,100], ['Kepulauan Seribu',177,12]
-];
-const bidang = [
-  ['Sosial',1842,100], ['Keagamaan',1538,84], ['Pendidikan',1262,69],
-  ['Kepemudaan',934,51], ['Kebudayaan',712,39], ['Lingkungan',554,30]
-];
-const sampleRequests = [
-  {ticket:'AKT2026-0710', date:'10 Juli 2026', service:'Pelaporan Keaktifan Ormas', type:'Laporan Kegiatan', org:'Komunitas Lingkungan Hijau Jakarta', wilayah:'Jakarta Utara', status:'Diajukan', docs:'4/6', sla:'1 hari', bidang:'Lingkungan'},
-  {ticket:'0NXyXyzbwoAm', date:'01 Juli 2026', service:'Pendaftaran Ormas', type:'Badan Hukum', org:'Jurnal Demokrasi', wilayah:'Jakarta Pusat', status:'Diajukan', docs:'3/3', sla:'2 hari', bidang:'Sosial'},
-  {ticket:'zbOYNlzbwoAm', date:'07 Juli 2026', service:'Pendaftaran Ormas', type:'Non-Badan Hukum', org:'Forum Pemuda Betawi Bersatu', wilayah:'Jakarta Timur', status:'Selesai - Disetujui oleh Kemendagri', docs:'21/21', sla:'Selesai', bidang:'Kepemudaan'},
-  {ticket:'RBaBO7zbwoAm', date:'13 Mei 2026', service:'Pendaftaran Ormas', type:'Badan Hukum', org:'Yayasan Peduli Pendidikan Anak Bangsa', wilayah:'Jakarta Selatan', status:'Diajukan', docs:'2/3', sla:'4 hari', bidang:'Pendidikan'},
-  {ticket:'Y8P8ygzbwoAm', date:'10 Mei 2026', service:'Pendaftaran Ormas', type:'Badan Hukum', org:'Lembaga Dakwah dan Sosial Al-Ikhlas', wilayah:'Jakarta Barat', status:'Disetujui', docs:'3/3', sla:'Selesai', bidang:'Keagamaan'},
-  {ticket:'mWba0jzbwoAm', date:'05 Mei 2026', service:'Pendaftaran Ormas', type:'Badan Hukum', org:'Komunitas Lingkungan Hijau Jakarta', wilayah:'Jakarta Utara', status:'Koreksi', docs:'1/3', sla:'6 hari', bidang:'Lingkungan'},
-  {ticket:'AjLpZLzbwoAm', date:'23 April 2026', service:'Pendaftaran Ormas', type:'Badan Hukum', org:'Paguyuban Seni Budaya Nusantara', wilayah:'Jakarta Pusat', status:'Disetujui', docs:'3/3', sla:'Selesai', bidang:'Kebudayaan'}
+const COLORS = {
+  blue: '#5371ff',
+  cyan: '#34dcdb',
+  green: '#12b76a',
+  yellow: '#f79009',
+  red: '#f04438',
+  ink: '#101828'
+};
+
+const regionData = [
+  { name: 'Jakarta Pusat', total: 1205 },
+  { name: 'Jakarta Utara', total: 1340 },
+  { name: 'Jakarta Barat', total: 1450 },
+  { name: 'Jakarta Selatan', total: 1210 },
+  { name: 'Jakarta Timur', total: 1460 },
+  { name: 'Kepulauan Seribu', total: 177 }
 ];
 
-function logoHtml(){return `<a class="logo" href="#home"><div class="logo-mark"></div><div><div class="logo-title">BAKESBANGPOL</div><div class="logo-sub">Provinsi DKI Jakarta</div></div></a>`;}
-function header(){return `<header class="topbar"><div class="container topbar-inner">${logoHtml()}<nav class="nav"><a>PROFIL <span class="chev">⌄</span></a><a>BIDANG <span class="chev">⌄</span></a><a>PPID <span class="chev">⌄</span></a><a>MEDIA <span class="chev">⌄</span></a><a>FAQ <span class="chev">⌄</span></a><a>DWP</a><a>Kanal Pengaduan (CRM) ↗</a></nav><div class="header-actions"><div class="search">⌕ <span>Cari Berita</span></div><button class="icon-btn" title="Tema">☾</button><button class="profile-btn" onclick="go('#admin-dashboard')">♡</button></div></div></header>`;}
-function footer(){return `<footer class="footer"><div class="container footer-grid"><div><h4>BAKESBANGPOL</h4><p>Provinsi DKI Jakarta merupakan lembaga pemerintah yang bertugas melaksanakan urusan pemerintahan di bidang kesatuan bangsa dan politik.</p><div class="socials">◎ 𝕏 f ▶</div></div><div style="text-align:center">${logoHtml()}<p>Jalan Kebon Sirih Nomor 18 Blok H<br>Lantai 15 Jakarta Pusat, Kode Pos<br>10110 DKI Jakarta</p></div><div><p>✉ bakesbangpol.dki@gmail.com</p><p>☏ (021) 3800590</p><hr><b>Pengunjung Hari Ini</b> 2<br><b>Jumlah Pengunjung</b> 614</div></div><div class="container" style="margin-top:26px;color:#667085;font-size:13px">© 2026 Prototype BAKESBANGPOL. Template ini dibuat untuk mockup/presentasi.</div></footer><div class="wa">WA</div>`;}
-function section(title, desc){return `<div class="form-section-title"><h3>${title}</h3><p>${desc||''}</p></div>`;}
-function field(label, cls='col2', type='text', val=''){return `<div class="field ${cls}"><label>${label}</label><input type="${type}" value="${val}"></div>`;}
-function file(label, cls='col2', hint='Dokumen .pdf, ukuran mak 1Mb'){return `<div class="field ${cls}"><label>${label}</label><div class="file-box"><span>📎 Pilih File</span><small>${hint}</small></div></div>`;}
-function kpi(title, value, desc, color='blue', icon='●'){return `<article class="kpi ${color}"><div class="kpi-icon">${icon}</div><div><small>${title}</small><strong>${value}</strong><span>${desc}</span></div></article>`;}
-function mini(title, value, desc, cls=''){return `<article class="mini-card ${cls}"><small>${title}</small><strong>${value}</strong><span>${desc}</span></article>`;}
-function barChart(rows){return `<div class="chart-bars">${rows.map(r=>`<div class="bar-row"><span>${r[0]}</span><div class="bar"><i style="width:${r[2]}%"></i></div><b>${Number(r[1]).toLocaleString('id-ID')}</b></div>`).join('')}</div>`;}
-function vBars(rows){return `<div class="vbars">${rows.map(r=>`<div class="vbar"><b>${Number(r[1]).toLocaleString('id-ID')}</b><i style="height:${r[2]}%"></i><span>${r[0]}</span></div>`).join('')}</div>`;}
-function donut(items, center='6.842'){let total=items.reduce((a,b)=>a+b[1],0); let acc=0; const stops=items.map(([_,v,c])=>{const start=acc/total*360; acc+=v; const end=acc/total*360; return `${c} ${start}deg ${end}deg`;}).join(','); return `<div class="donut-card"><div class="donut" style="background:conic-gradient(${stops})"><div><small>Total</small><b>${center}</b><small>ORMAS</small></div></div><div class="legend">${items.map(i=>`<p><i style="background:${i[2]}"></i>${i[0]} <b>${Number(i[1]).toLocaleString('id-ID')}</b></p>`).join('')}</div></div>`;}
-function filterRow(){return `<div class="filter-row"><label>Periode<select><option>Juli 2026</option><option>Juni 2026</option><option>Mei 2026</option></select></label><label>Wilayah<select><option>Semua Wilayah</option><option>Jakarta Pusat</option><option>Jakarta Timur</option></select></label><label>Status<select><option>Semua Status</option><option>Diajukan</option><option>Koreksi</option><option>Disetujui</option></select></label>${mini('Laporan Bulan Ini','184','+12,6% dari bulan lalu')}${mini('Surat Diterbitkan','96','+8,3% dari bulan lalu','success')}</div>`;}
-function mapPanel(){return `<div class="jakarta-map"><span class="tag p1">Jakarta Barat<br><b>1.450</b></span><span class="tag p2">Jakarta Pusat<br><b>1.205</b></span><span class="tag p3">Jakarta Utara<br><b>1.340</b></span><span class="tag p4">Jakarta Selatan<br><b>1.210</b></span><span class="tag p5">Jakarta Timur<br><b>1.460</b></span><span class="tag p6">Kep. Seribu<br><b>177</b></span></div>`;}
-function statusBadge(status){let cls='blue'; if(status.includes('Selesai')||status.includes('Disetujui')) cls='green'; else if(status.includes('Koreksi')) cls='orange'; else if(status.includes('Ditolak')) cls='red'; return `<span class="pill ${cls}">${status}</span>`;}
-function requestRows(limit=6){return sampleRequests.slice(0,limit).map((r,i)=>`<tr><td>${i+1}</td><td><a class="click-link" onclick="go('#admin-detail')">${r.ticket}</a></td><td>${r.date}</td><td><b>${r.org}</b><br><small>${r.type} • ${r.bidang}</small></td><td>${r.wilayah}</td><td>${statusBadge(r.status)}</td><td>${r.docs}</td><td>${r.sla}</td></tr>`).join('');}
-function dashboardTable(){return `<article class="panel table-panel"><div class="panel-head"><h3>Daftar ORMAS yang Perlu Ditindaklanjuti</h3><button class="outline-btn" onclick="go('#admin-requests')">Lihat Semua →</button></div><table><thead><tr><th>No.</th><th>No. Tiket</th><th>Tgl. Pengajuan</th><th>Nama ORMAS</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>SLA</th></tr></thead><tbody>${requestRows()}</tbody></table></article>`;}
-
-function homePage(){return `${header()}<main><section class="container hero"><div class="hero-frame"><div class="hero-bg-grid"></div><div class="hero-badge"><span>▣</span><span>BAKESBANGPOL</span></div><div class="hero-title-center">Layanan Organisasi Kemasyarakatan</div><h1>Pendaftaran Ormas</h1><div class="slider-dots"><span></span><span class="active"></span><span></span></div></div></section><section class="container"><div class="section-head"><div class="section-title"><div class="title-logo"></div><div><h2>Layanan <span>Kami</span></h2><div class="under"></div></div></div><a class="link-blue">Lihat Semua Layanan ›</a></div><div class="cards-3"><div class="service-card" onclick="toast('Prototype Pelaporan FKDM belum dibuat')"><div class="mini-logo"></div><h3>Pelaporan FKDM</h3><p>Fitur Pelaporan FKDM digunakan untuk menginput Laporan Harian bagi anggota FKDM di lingkungan Provinsi DKI Jakarta.</p></div><div class="service-card" onclick="openOrmasModal()"><div class="mini-logo"></div><h3>Pendaftaran Ormas</h3><p>Layanan Pendaftaran Ormas digunakan untuk melihat data Ormas terdaftar, menginput permohonan baru, perubahan, dan perpanjangan pendaftaran Ormas baik Badan Hukum maupun Non Badan Hukum.</p></div><div class="service-card" onclick="toast('Prototype Paskibraka belum dibuat')"><div class="mini-logo"></div><h3>Paskibraka</h3><p>Aplikasi pendaftaran Paskibraka adalah platform digital untuk mempermudah proses pendaftaran calon anggota Paskibraka.</p></div></div></section><section class="container news-center"><div class="section-title" style="justify-content:center"><div><div class="title-logo" style="margin:auto"></div><h2>Berita <span>Lainnya</span></h2><div class="under"></div></div></div><div style="text-align:right;margin:-20px 0 18px"><a class="link-blue">Lihat Semua Berita ›</a></div><div class="news-grid">${[1,2,3,4,5,6,7,8].map((n)=>`<article class="news-card"><div class="news-img"><span class="time-pill">◷ ${n<5?'4 hari lalu':'1 minggu lalu'}</span><span class="badge-red">${n===1?'Kota/Kab Administrasi':'Provinsi'}</span></div><div class="news-body"><h3>Badan Kesbangpol DKI Jakarta ${n%2?'Terima Kunjungan Kerja':'Gelar Kegiatan Monitoring'}...</h3><p>Badan Kesatuan Bangsa dan Politik Provinsi DKI Jakarta menyelenggarakan kegiatan dan koordinasi lintas sektor...</p></div><div class="news-foot"><span>◎ ${n%3} Pembaca</span><span>♙ Hendra Irawan</span></div></article>`).join('')}</div></section></main>${footer()}`;}
-function openOrmasModal(){const div=document.createElement('div'); div.className='modal-backdrop'; div.innerHTML=`<div class="modal"><div class="modal-top"><h2>Pendaftaran Ormas</h2><button class="btn ghost" onclick="this.closest('.modal-backdrop').remove()">×</button></div><p>Layanan Pendaftaran Ormas ini digunakan untuk melihat data Ormas terdaftar, menginput permohonan baru, perubahan, dan perpanjangan pendaftaran Ormas baik yang memiliki Badan Hukum ataupun yang tidak memiliki Badan Hukum.</p><div class="modal-actions"><button class="btn" onclick="this.closest('.modal-backdrop').remove()">Tutup</button><button class="btn primary" onclick="this.closest('.modal-backdrop').remove(); go('#ormas-portal')">Lanjutkan</button></div></div>`; document.body.appendChild(div);}
-function portalPage(){return `${header()}<main class="page"><div class="container"><div class="crumb">Beranda / Layanan / Pendaftaran Ormas</div><section class="portal-hero"><div><h1>Pendaftaran & Pelaporan ORMAS</h1><p>Prototype layanan pengajuan, pemutakhiran, pelaporan keaktifan, verifikasi, dan dashboard monitoring organisasi kemasyarakatan.</p></div><div class="hero-actions"><button class="btn blue" onclick="go('#application')">Buat Pengajuan</button><button class="btn light" onclick="go('#activity-report')">Lapor Keaktifan</button></div></section><div class="quick-grid"><div class="quick-card"><span class="pill blue">Publik</span><h3>Dashboard Publik ORMAS</h3><p>Statistik agregat ORMAS untuk masyarakat, tanpa nomor tiket, status koreksi, catatan verifikasi, atau dokumen upload.</p><button class="btn blue" onclick="go('#public-dashboard')">Lihat Dashboard Publik</button></div><div class="quick-card"><span class="pill orange">Pemohon</span><h3>Pengajuan Layanan Ormas</h3><p>Memilih jenis ORMAS Badan Hukum atau Non Badan Hukum dan mengisi formulir pengajuan.</p><button class="btn" onclick="go('#application')">Mulai Pengajuan</button></div><div class="quick-card"><span class="pill cyan">SKT Lengkap</span><h3>Formulir Pengajuan SKT ORMAS</h3><p>Formulir lengkap 14 bagian untuk simulasi pengajuan SKT, dokumen persyaratan, data pengurus, dan kepatuhan.</p><button class="btn" onclick="go('#skt-form')">Buka Form SKT</button></div><div class="quick-card"><span class="pill green">Keaktifan</span><h3>Pelaporan Keaktifan ORMAS</h3><p>ORMAS dapat melaporkan kegiatan yang sudah dilaksanakan dengan mengunggah laporan, foto, daftar hadir, atau dokumen pendukung.</p><button class="btn" onclick="go('#activity-report')">Lapor Kegiatan</button></div><div class="quick-card"><span class="pill green">Pegawai</span><h3>Dashboard Pegawai</h3><p>Melihat permintaan masuk, status verifikasi, dokumen, laporan keaktifan, dan tindak lanjut.</p><button class="btn" onclick="go('#admin-dashboard')">Masuk Pegawai</button></div></div></div></main>${footer()}`;}
-function publicDashboardContent(){return `<div class="dashboard-full public-only">${publicFilterRow()}<div class="kpi-grid">${kpi('Total ORMAS Terdata','6.842','Rekap agregat se-DKI Jakarta','blue','👥')}${kpi('Berbadan Hukum','3.256','47,6% dari total ORMAS','green','✅')}${kpi('Non Badan Hukum / SKT','3.586','52,4% dari total ORMAS','yellow','📄')}${kpi('Kepengurusan Aktif','5.106','74,7% dari total ORMAS','green','🗓️')}${kpi('Bidang Terbanyak','Sosial','1.842 ORMAS','blue','🤝')}${kpi('Wilayah Terbanyak','Jakarta Timur','1.460 ORMAS','blue','📍')}</div><div class="public-note"><b>Catatan Dashboard Publik:</b> halaman ini hanya menampilkan data agregat. Nomor tiket, status verifikasi internal, catatan revisi, nomor HP pengurus, dokumen upload, dan tindakan pegawai tidak ditampilkan untuk publik.</div><div class="chart-grid"><article class="panel wide"><h3>Tren Lapor Keberadaan ORMAS</h3>${vBars([['Jan',920,55],['Feb',980,60],['Mar',1120,68],['Apr',1260,76],['Mei',1480,88],['Jun',1588,94],['Jul',1680,100]])}</article><article class="panel"><h3>Status Badan Hukum</h3>${donut([['Badan Hukum',3256,'#22c55e'],['Non Badan Hukum / SKT',3586,'#fbbf24']])}</article><article class="panel wide"><h3>Sebaran ORMAS per Wilayah</h3>${vBars(wilayah)}</article><article class="panel"><h3>Bidang Kegiatan Utama</h3>${barChart(bidang)}</article><article class="panel map-panel"><h3>Peta Sebaran ORMAS</h3>${mapPanel()}</article><article class="panel"><h3>Status Kepengurusan</h3>${donut([['Aktif',5106,'#22c55e'],['Akan Berakhir',894,'#fbbf24'],['Kadaluarsa',842,'#ef4444']],'6.842')}</article><article class="panel"><h3>Cabang / Unit / Sayap Organisasi</h3>${donut([['Memiliki',2388,'#5371ff'],['Tidak Memiliki',4454,'#d0d5dd']],'6.842')}</article><article class="panel"><h3>Ringkasan Kontak Organisasi</h3>${barChart([['Memiliki Email',6280,92],['Memiliki Telepon',5915,86],['Memiliki Website',2810,41]])}</article></div>${publicTable()}</div>`;}
-function publicFilterRow(){return `<div class="filter-row"><label>Periode Data<select><option>Juli 2026</option><option>Juni 2026</option><option>Mei 2026</option></select></label><label>Wilayah<select><option>Seluruh DKI Jakarta</option><option>Jakarta Pusat</option><option>Jakarta Timur</option></select></label><label>Bidang Kegiatan<select><option>Semua Bidang</option><option>Sosial</option><option>Keagamaan</option><option>Pendidikan</option></select></label>${mini('Total Wilayah','6','Kota/Kab Administrasi')}${mini('Data Terakhir','Juli 2026','Diperbarui berkala','success')}</div>`;}
-
-function fullDashboard(isAdmin=false){return `<div class="dashboard-full">${filterRow()}<div class="kpi-grid">${kpi('Total ORMAS','6.842','Terdata di DKI Jakarta','blue','👥')}${kpi('Badan Hukum','3.256','47,6% dari total','green','✅')}${kpi('Non Badan Hukum','3.586','52,4% dari total','yellow','📄')}${kpi('Menunggu Verifikasi','328','Perlu diperiksa','orange','⏳')}${kpi('Perlu Revisi','117','Catatan sudah dikirim','red','⚠️')}${kpi('Surat Terbit','96','Bulan berjalan','blue','📨')}</div><div class="chart-grid"><article class="panel wide"><h3>Tren Pelaporan ORMAS</h3>${vBars([['Jan',920,55],['Feb',980,60],['Mar',1120,68],['Apr',1260,76],['Mei',1480,88],['Jun',1588,94],['Jul',1680,100]])}</article><article class="panel"><h3>Status Verifikasi</h3>${donut([['Draft',153,'#60a5fa'],['Menunggu',328,'#fbbf24'],['Revisi',117,'#fb923c'],['Ditolak',330,'#ef4444'],['Diverifikasi',5914,'#22c55e']])}</article><article class="panel wide"><h3>Sebaran ORMAS per Wilayah</h3>${vBars(wilayah)}</article><article class="panel"><h3>Bidang Kegiatan ORMAS</h3>${barChart(bidang)}</article><article class="panel map-panel"><h3>Peta Sebaran ORMAS</h3>${mapPanel()}</article><article class="panel"><h3>Status Kepengurusan</h3>${donut([['Aktif',5106,'#22c55e'],['Akan Berakhir',894,'#fbbf24'],['Kadaluarsa',842,'#ef4444']],'6.842')}</article><article class="panel"><h3>Status Dokumen</h3>${barChart([['Lengkap',5106,100],['Belum Lengkap',1212,24],['Tidak Valid',524,10]])}</article><article class="panel"><h3>Jenis Pengajuan</h3>${barChart([['Pendaftaran Baru',2320,100],['Pemutakhiran',1784,77],['Perubahan Data',948,41],['Perpanjangan',782,34]])}</article><article class="panel"><h3>Kelengkapan Dokumen Utama</h3>${barChart([['SK AHU',5914,94],['SK Pengurus',6380,98],['Surat Pernyataan',6088,92],['Foto Kantor',4205,66],['Logo',6101,96],['NPWP',5430,84]])}</article><article class="panel"><h3>Cabang / Unit / Sayap</h3>${donut([['Memiliki',2388,'#5371ff'],['Tidak Memiliki',4454,'#d0d5dd']],'6.842')}</article></div>${isAdmin ? dashboardTable() : publicTable() }</div>`;}
-function publicTable(){return `<article class="panel table-panel"><div class="panel-head"><h3>Ringkasan Wilayah untuk Publik</h3><button class="outline-btn" onclick="go('#ormas-portal')">Kembali</button></div><table><thead><tr><th>Wilayah</th><th>Total ORMAS</th><th>Badan Hukum</th><th>Non Badan Hukum</th><th>Bidang Terbanyak</th></tr></thead><tbody>${wilayah.map((w,i)=>`<tr><td>${w[0]}</td><td>${w[1].toLocaleString('id-ID')}</td><td>${Math.round(w[1]*0.48).toLocaleString('id-ID')}</td><td>${Math.round(w[1]*0.52).toLocaleString('id-ID')}</td><td>${bidang[i%bidang.length][0]}</td></tr>`).join('')}</tbody></table></article>`;}
-function publicDashboard(){return `${header()}<main class="page"><div class="container"><div class="public-top"><div class="public-hero"><h1>Dashboard Publik ORMAS</h1><p>Informasi agregat organisasi kemasyarakatan untuk masyarakat. Data internal seperti menunggu verifikasi, perlu revisi, nomor tiket, dokumen, dan catatan pegawai tidak ditampilkan di halaman publik.</p></div><button class="btn" onclick="go('#ormas-portal')">Kembali</button></div>${publicDashboardContent()}</div></main>${footer()}`;}
-
-function adminShell(content, active='dashboard'){return `<div class="app-shell"><aside class="sidebar"><div class="side-logo"><div class="logo-mark"></div><div><b>BAKESBANGPOL</b><small>Admin Internal</small></div></div><nav class="side-nav"><a class="${active==='dashboard'?'active':''}" href="#admin-dashboard">Dashboard Pegawai</a><a class="${active==='requests'?'active':''}" href="#admin-requests">Permintaan Layanan Ormas</a><a class="${active==='skt'?'active':''}" href="#skt-form">Form SKT Lengkap</a><a class="${active==='activity'?'active':''}" href="#activity-report">Pelaporan Keaktifan</a><a href="#home">Halaman Depan</a></nav><div class="side-user"><b>Hendra Irawan</b><br><small>ASN DKI Jakarta</small></div></aside><main class="admin-main"><header class="admin-header"><div><h1>${active==='requests'?'Permintaan Layanan':'Dashboard Monitoring ORMAS'}</h1><p>Beranda / ${active==='requests'?'Permintaan Layanan':'Dashboard Pegawai'}</p></div><div><button class="btn" onclick="go('#home')">Halaman Depan</button><button class="btn danger">Logout</button></div></header><section class="admin-content">${content}</section></main></div>`;}
-function adminDashboard(){const content = `<div class="admin-intro"><div><h2>Dashboard Pegawai BAKESBANGPOL</h2><p>Dashboard internal untuk memantau permintaan layanan, verifikasi, dokumen, status surat, dan tindak lanjut ORMAS.</p></div><button class="btn blue" onclick="go('#admin-requests')">Lihat Permintaan Layanan</button></div>${fullDashboard(true)}<div class="grid-2"><article class="panel"><h3>Agenda Tindak Lanjut Hari Ini</h3><div class="task-list"><p><b>19</b> notifikasi permintaan layanan belum dibuka</p><p><b>12</b> pengajuan menunggu verifikasi dokumen</p><p><b>7</b> pengajuan melewati SLA 5 hari</p><p><b>4</b> surat siap diterbitkan</p></div></article><article class="panel"><h3>Riwayat Aktivitas Verifikator</h3><div class="timeline"><div class="item"><b>Disetujui</b><br><small>Jurnal Demokrasi • 09:20</small></div><div class="item"><b>Koreksi</b><br><small>Komunitas Lingkungan Hijau Jakarta • 10:15</small></div><div class="item"><b>Surat Terbit</b><br><small>Forum Pemuda Betawi Bersatu • 11:30</small></div></div></article></div>`; return adminShell(content,'dashboard');}
-function adminRequests(){const content=`<div class="panel"><div class="panel-head"><h2>Daftar Permintaan Layanan</h2><div><button class="btn blue">Pencarian Lanjutan</button><button class="btn">🔄</button></div></div><div class="search-row"><input placeholder="Masukkan no. tiket / nama ormas"><select><option>Semua Status</option><option>Diajukan</option><option>Koreksi</option><option>Disetujui</option></select><select><option>Semua Jenis</option><option>Badan Hukum</option><option>Non Badan Hukum</option></select></div><table><thead><tr><th>No.</th><th>No. Tiket</th><th>Tgl. Pengajuan</th><th>Permintaan Layanan</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>SLA</th></tr></thead><tbody>${requestRows(10)}</tbody></table></div>`;return adminShell(content,'requests');}
-function adminDetail(){const content=`<div class="preview-detail"><div class="panel"><h2>Pengajuan Layanan Ormas</h2><p class="muted">Formulir terkait pengajuan layanan ormas</p><div class="stats small"><div class="stat-card"><div class="label">No. Tiket</div><div class="value">zbOYNlzbwoAm</div></div><div class="stat-card"><div class="label">Tgl. Pengajuan</div><div class="value">7 Jul 2026</div></div><div class="stat-card"><div class="label">Jenis Ormas</div><div class="value">Non Badan Hukum</div></div></div><h3>A. Data Organisasi</h3><table><tbody><tr><th>Nama Organisasi</th><td>Jurnal Demokrasi</td></tr><tr><th>Nama Singkatan</th><td>Jurdem</td></tr><tr><th>Tempat & Tgl. Pendirian</th><td>Jakarta Pusat, 1 Jan 2025</td></tr><tr><th>Bidang Kegiatan</th><td>Sosial, Kepemudaan</td></tr><tr><th>Alamat Sekretariat</th><td>Jl. Test12345, Gambir, Jakarta Pusat</td></tr></tbody></table><h3>Dokumen</h3><table><thead><tr><th>Dokumen</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${['Scan Surat Permohonan','Scan Akta Notaris','Scan NPWP','Surat Domisili','Foto Kantor','SK Kepengurusan','Formulir Keabsahan'].map((d,i)=>`<tr><td>📎 ${d}</td><td>${i===4?'<span class="pill orange">Perlu Cek</span>':'<span class="pill green">Ada</span>'}</td><td><a class="click-link" onclick="toast('Mockup: membuka dokumen')">Lihat</a></td></tr>`).join('')}</tbody></table></div><aside><div class="panel"><h3>Status Verifikasi</h3><p><span class="pill orange">Diajukan</span></p><label>Catatan Verifikasi</label><textarea class="note-area" placeholder="Tulis catatan koreksi..."></textarea><button class="btn danger" onclick="toast('Mockup: status diubah menjadi Koreksi')">Koreksi</button> <button class="btn success" onclick="toast('Mockup: pengajuan disetujui')">Setujui</button></div><div class="panel"><h3>Riwayat</h3><div class="timeline"><div class="item"><b>Diajukan</b><br><small>7 Jul 2026 oleh ORMAS</small></div><div class="item"><b>Menunggu Verifikasi</b><br><small>Belum diperiksa</small></div></div></div></aside></div>`;return adminShell(content,'requests');}
-
-function applicationPage(){return `${header()}<main class="page"><div class="container"><div class="crumb">Beranda / Pendaftaran Ormas / Pengajuan</div><div class="app-form-layout"><aside class="stepper-card"><h3>Pengajuan Layanan Ormas</h3><p>Formulir terkait pengajuan layanan ormas.</p><button class="type-card ${currentOrmasType==='badan-hukum'?'active':''}" onclick="setType('badan-hukum')"><b>Badan Hukum</b><span>Pelaporan keberadaan Ormas berbadan hukum</span></button><button class="type-card ${currentOrmasType==='non-badan-hukum'?'active':''}" onclick="setType('non-badan-hukum')"><b>Non Badan Hukum</b><span>Pendaftaran organisasi dan dokumen SKT</span></button><div class="info-box"><b>Catatan</b><br>Ukuran dokumen maksimal 1Mb. Template ini hanya mockup interaktif.</div></aside><section class="form-card">${currentOrmasType==='badan-hukum'?formBadanHukum():formNonBadanHukum()}</section></div></div></main>${footer()}`;}
-function formBadanHukum(){return `<div>${section('Jenis Pengajuan','Pilihan ini membantu kami memproses permohonan Anda dengan lebih cepat dan akurat')}<div class="form-grid"><div class="field col2"><label>Jenis Pengajuan</label><select><option>Pelaporan Keberadaan Ormas</option><option>Perubahan Data</option><option>Perpanjangan/Pemutakhiran</option></select></div><div class="field col2"><label>Jenis Ormas</label><select><option>Badan Hukum</option></select></div></div>${section('A. Data Ormas','Informasi umum terkait ormas beserta atribut keanggotaan')}<div class="form-grid">${field('Nama Ormas/LSM','col2','text','Jurdem')}${field('Alamat Email','col2','email','jurnaldemokrasi.poldem@gmail.com')}${field('Nama Ketua','col2')}${field('Nama Sekretaris','col2')}${field('Nama Bendahara','col2')}${field('Periode Kepengurusan Mulai','col2','date')}${field('Periode Kepengurusan Selesai','col2','date')}<div class="field col4"><label>Alamat Sekretariat</label><select><option>Pilih kelurahan alamat sekretariat</option></select><textarea placeholder="Masukkan detail alamat sekretariat"></textarea><small>0 / 200</small></div>${field('Telepon / Fax','col2')}${field('Situs Web','col2','text','https://')}</div>${section('B. Legalitas & Badan Hukum','Informasi terperinci terkait legalitas dan badan hukum ormas')}<div class="form-grid">${field('No Surat Usulan','col2')}${field('Tgl. Surat','col2','date')}${field('Perihal Surat','col4')}${field('No SK Pengesahan Badan Hukum','col2')}${field('Tgl. SK Pengesahan','col2','date')}${file('SK Kemenkumham')}${file('Surat Permohonan Pelaporan Keberadaan Ormas')}${file('SK Kepengurusan Tk DKI Jakarta')}</div><div class="form-action-line"><button class="btn" onclick="go('#ormas-portal')">Kembali</button><button class="btn blue" onclick="toast('Mockup: pengajuan Badan Hukum berhasil disimpan')">Simpan Pengajuan</button></div></div>`;}
-function formNonBadanHukum(){return `<div>${section('Jenis Pengajuan','Pilihan ini membantu kami memproses permohonan Anda dengan lebih cepat dan akurat')}<div class="form-grid"><div class="field col2"><label>Jenis Pengajuan</label><select><option>Pendaftaran Organisasi</option><option>Pemutakhiran Data</option><option>Perubahan Data Kepengurusan</option></select></div><div class="field col2"><label>Jenis Ormas</label><select><option>Non Badan Hukum</option></select></div></div>${section('A. Data Organisasi','Informasi umum terkait organisasi')}<div class="form-grid">${field('Nama Organisasi','col2','text','Jurdem')}${field('Nama Singkatan','col2')}${field('Tempat Pendirian','col2')}${field('Tgl. Pendirian','col2','date')}</div>${section('B. Dokumen Organisasi','Kelengkapan dokumen organisasi')}<div class="form-grid">${field('No. Surat Permohonan','col2')}${field('Tgl. Surat Permohonan','col2','date')}${file('Scan Surat Permohonan')}${field('Nama Notaris','col2')}${field('No. Akta Notaris','col2')}${field('Tgl. Akta','col2','date')}${file('Scan Akta Notaris')}${field('Nama Bank','col2')}${field('Rekening Bank','col2')}${field('NPWP','col2','text','##.###.###.#-###.###')}${file('Scan NPWP')}</div>${section('C. Atribut Organisasi','Keterangan detail terkait organisasi')}<div class="form-grid">${field('Bidang Kegiatan','col2')}${field('Keputusan Tertinggi Organisasi','col2')}${field('Usaha Organisasi','col2')}${field('Sumber Keuangan','col2')}<div class="field col2"><label>Program Kerja Organisasi</label><textarea></textarea></div>${file('Scan Program Kerja Organisasi')}<div class="field col4"><label>Asas Ciri Organisasi</label><textarea></textarea></div><div class="field col4"><label>Tujuan Organisasi</label><textarea></textarea></div><div class="field col2"><label>Unit Cabang Organisasi</label><input placeholder="Pisahkan dengan koma, bila lebih dari satu"></div><div class="field col2"><label>Lokasi Unit Cabang Organisasi</label><input placeholder="Pisahkan dengan koma, bila lebih dari satu"></div></div>${section('D. Data Sekretariat','Informasi sekretariat & atribut organisasi')}<div class="form-grid">${field('Email','col2','email','jurnaldemokrasi.poldem@gmail.com')}${field('Telepon / Fax','col2')}${field('Website','col2','text','https://')}<div class="field col4"><label>Alamat Sekretariat</label><select><option>Pilih kelurahan alamat sekretariat</option></select><textarea placeholder="Masukkan detail alamat sekretariat"></textarea><small>0 / 200</small></div>${file('Surat Keterangan Domisili Sekretariat Organisasi')}${file('Bukti Kepemilikan / Sewa Kontrak Kantor')}${file('Lambang / Logo Organisasi','col2','Dokumen gambar, ukuran mak 1Mb')}${file('Bendera Organisasi','col2','Dokumen gambar, ukuran mak 1Mb')}${file('Foto Kantor Sekretariat (Tampak depan)','col2','Dokumen gambar, ukuran mak 1Mb')}</div>${section('E. Data Rekomendasi','Kelengkapan Dokumen Rekomendasi Pihak Berwenang')}<div class="form-grid">${file('Surat Pernyataan sesuai Permendagri No. 57 Tahun 2017')}${file('Rekomendasi Kementerian Agama')}${file('Rekomendasi Kementerian dan PD Budaya')}${file('Surat Pernyataan Persetujuan Pejabat')}</div>${section('F. Daftar Kepemimpinan dan Keanggotaan','Informasi Dewan Pimpinan dan Anggota Organisasi')}<div class="notice">Belum ada data personil. Silakan masukkan data personil terlebih dahulu.</div><div class="form-grid">${field('Periode Kepengurusan Mulai','col2','date')}${field('Periode Kepengurusan Selesai','col2','date')}${file('SK Kepengurusan','col2')}</div>${personilForm()}<div class="form-action-line"><button class="btn" onclick="go('#ormas-portal')">Kembali</button><button class="btn blue" onclick="toast('Mockup: pengajuan Non Badan Hukum berhasil disimpan')">Simpan Pengajuan</button></div></div>`;}
-function personilForm(){return `${section('Pendaftaran Personil','Lengkapi data diri personil yang ingin didaftarkan')}<div class="form-grid">${field('Jabatan','col2')}${field('Nama Lengkap','col2')}${field('NIK','col2')}${field('Agama','col2')}${field('Kewarganegaraan','col2')}<div class="field col2"><label>Jenis Kelamin</label><select><option>Laki-laki</option><option>Perempuan</option></select></div><div class="field col4"><label>Alamat</label><textarea></textarea></div>${field('Tempat Lahir','col2')}${field('Tgl. Lahir','col2','date')}${field('Status Perkawinan','col2')}${field('Pekerjaan','col2')}${field('No Telepon Seluler','col2')}${file('KTP','col2','Dokumen gambar, ukuran mak 1Mb')}${file('Pas Foto 4x6 (terbaru)','col2','Dokumen gambar, ukuran mak 1Mb')}${file('Daftar Riwayat Hidup','col2','Dokumen .pdf, ukuran mak 1Mb')}</div><button class="btn" style="margin-top:12px" onclick="toast('Mockup: personil ditambahkan ke daftar')">+ Tambah Personil</button>`;}
-function setType(t){currentOrmasType=t;render();}
-function go(hash){location.hash=hash;}
-function toast(msg){const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200);}
-
-function checkList(title, items){return `<div class="field col4"><label>${title}</label><div class="check-grid">${items.map(i=>`<label class="check-item"><input type="checkbox" checked> ${i}</label>`).join('')}</div></div>`;}
-function selectField(label, options, cls='col2'){return `<div class="field ${cls}"><label>${label}</label><select>${options.map(o=>`<option>${o}</option>`).join('')}</select></div>`;}
-function sktFormPage(){return `${header()}<main class="page"><div class="container"><div class="crumb">Beranda / Pendaftaran Ormas / Pengajuan SKT</div><div class="app-form-layout skt-layout"><aside class="stepper-card"><h3>Formulir Pengajuan SKT ORMAS</h3><p>Prototype formulir lengkap Surat Keterangan Terdaftar (SKT). Data dipakai untuk simulasi input, verifikasi dokumen, dan dashboard monitoring.</p><div class="step-list"><span>1. Identitas Pengajuan</span><span>2. Data Dasar Organisasi</span><span>3. Alamat Sekretariat</span><span>4. Legalitas</span><span>5. Pendiri/Pembina/Penasihat</span><span>6-8. Ketua, Sekretaris, Bendahara</span><span>9. Masa Bakti</span><span>10. Unit/Cabang</span><span>11. Upload Dokumen</span><span>12. Pernyataan</span><span>13. Review</span></div><div class="info-box"><b>Catatan</b><br>Halaman ini dibuat sebagai mockup pengganti Google Form lengkap. Tombol dan upload bersifat simulasi.</div><button class="btn" onclick="go('#ormas-portal')">Kembali ke Portal</button></aside><section class="form-card">${sktFormContent()}</section></div></div></main>${footer()}`;}
-function sktFormContent(){return `<div>${section('1. Identitas Pengajuan','Data pemohon dan jenis pengajuan layanan SKT ORMAS')}<div class="form-grid">${field('Nama Pengisi Form','col2')}${field('Jabatan Pengisi Form','col2')}${field('Nomor HP / WhatsApp Pengisi Form','col2')}${field('Email Pemohon / Email Organisasi','col2','email','ormas@example.org')}${field('Tanggal Pengajuan','col2','date')}${selectField('Jenis Pengajuan',['Pendaftaran SKT Baru','Perpanjangan / Pembaruan Data','Perubahan Data ORMAS'],'col2')}</div>${section('2. Data Dasar Organisasi','Informasi umum terkait organisasi')}<div class="form-grid">${field('Nama Organisasi','col2')}${field('Nama Singkatan Organisasi','col2')}${selectField('Bidang Kegiatan',['Sosial','Keagamaan','Pendidikan','Kepemudaan','Kebudayaan','Lingkungan','Kesehatan','Kemanusiaan','Profesi','Lainnya'],'col2')}${field('Tempat Pendirian','col2')}${field('Tanggal Pendirian','col2','date')}<div class="field col4"><label>Asas / Ciri Organisasi</label><textarea></textarea></div><div class="field col4"><label>Tujuan Organisasi</label><textarea></textarea></div><div class="field col4"><label>Program Kerja Organisasi</label><textarea></textarea></div><div class="field col4"><label>Keputusan Tertinggi Organisasi sesuai AD/ART</label><textarea></textarea></div><div class="field col2"><label>Usaha Organisasi</label><textarea></textarea></div><div class="field col2"><label>Sumber Keuangan Organisasi</label><textarea></textarea></div></div>${section('3. Alamat Kantor / Sekretariat','Data lokasi kantor/sekretariat organisasi')}<div class="form-grid"><div class="field col4"><label>Alamat / Jalan Kantor Sekretariat</label><textarea></textarea></div>${field('Kelurahan','col2')}${field('Kecamatan','col2')}${selectField('Kota / Kabupaten',['Jakarta Pusat','Jakarta Utara','Jakarta Barat','Jakarta Selatan','Jakarta Timur','Kepulauan Seribu','Luar DKI Jakarta'],'col2')}${field('Kode Pos','col2')}${field('Nomor Telepon Kantor','col2')}${field('Email Organisasi','col2','email')}${field('Nomor Fax','col2')}${field('Website Organisasi','col2','text','https://')}${field('Latitude Lokasi Kantor jika ada','col2')}${field('Longitude Lokasi Kantor jika ada','col2')}</div>${section('4. Legalitas dan Keabsahan Dokumen','Data legalitas dan keabsahan organisasi')}<div class="form-grid">${field('Nomor Akta Notaris','col2')}${field('Tanggal Akta Notaris','col2','date')}${field('Nama Notaris','col2')}${field('Nomor dan Tanggal Notaris','col2')}${field('Nomor AHU / SK Kemenkumham jika ada','col2')}${field('Nomor NPWP Organisasi','col2')}${field('Nomor Rekening Organisasi / Pengurus','col2')}${field('Nama Bank','col2')}${selectField('Status Badan Hukum',['Berbadan Hukum','Belum Berbadan Hukum / SKT','Dalam Proses'],'col2')}</div>${section('5. Pendiri, Pembina, dan Penasihat','Data pihak yang tercantum dalam struktur organisasi')}<div class="form-grid"><div class="field col4"><label>Nama Pendiri</label><textarea></textarea></div>${field('Jumlah Pendiri','col2','number')}${field('Nama Pembina','col2')}<div class="field col4"><label>Nama Penasihat</label><textarea></textarea></div></div>${pengurusSection('6. Data Ketua / Sederajat','Ketua')}${pengurusSection('7. Data Sekretaris / Sederajat','Sekretaris')}${pengurusSection('8. Data Bendahara / Sederajat','Bendahara')}${section('9. Masa Bakti Kepengurusan dan SK Pengurus','Periode kepengurusan dan dasar SK pengurus')}<div class="form-grid">${field('Masa Bakti Kepengurusan Mulai','col2','date')}${field('Masa Bakti Kepengurusan Berakhir','col2','date')}${field('Nomor SK Susunan Pengurus','col2')}${field('Tanggal SK Susunan Pengurus','col2','date')}</div>${section('10. Unit / Cabang / Sayap Otonom Organisasi','Data cabang/unit/sayap organisasi jika ada')}<div class="form-grid">${selectField('Apakah memiliki Unit / Cabang / Sayap Otonom?',['Ya','Tidak'],'col2')}${field('Jumlah Cabang / Unit / Sayap Otonom','col2','number')}<div class="field col4"><label>Daftar Lokasi Cabang / Unit / Sayap Otonom</label><textarea placeholder="Contoh: Jakarta Timur, Jakarta Selatan, Bekasi"></textarea></div></div>${section('11. Upload Dokumen Persyaratan SKT','Dokumen persyaratan SKT. Dalam sistem asli dapat berupa upload file atau link dokumen.')}<div class="form-grid">${file('Surat Permohonan SKT yang ditandatangani Ketua dan Sekretaris')}${file('Formulir A - Formulir Isian Data ORMAS')}${file('Formulir B - Formulir Keabsahan Dokumen')}${file('Akta Notaris yang memuat AD / ART')}${file('Program Kerja Organisasi')}${file('SK Susunan Pengurus')}${file('Biodata Pengurus Ketua, Sekretaris, dan Bendahara')}${file('Pas Foto Pengurus 4x6 terbaru','col2','Dokumen gambar, ukuran mak 1Mb')}${file('KTP Elektronik Pengurus Organisasi','col2','Dokumen gambar, ukuran mak 1Mb')}${file('NPWP Organisasi')}${file('Surat Keterangan Domisili Organisasi')}${file('Bukti Kepemilikan / Sewa / Kontrak Kantor Organisasi')}${file('Foto Kantor Sekretariat Tampak Depan dengan Papan Nama ORMAS','col2','Dokumen gambar, ukuran mak 1Mb')}${file('Surat Pernyataan Bermaterai 10.000')}${file('Rekomendasi Kementerian Agama jika bidang agama')}${file('Rekomendasi Kebudayaan / Kepercayaan jika diperlukan')}${file('Surat Persetujuan Pejabat jika nama pejabat dicantumkan dalam kepengurusan')}${file('Lambang / Logo Organisasi','col2','Dokumen gambar, ukuran mak 1Mb')}${file('Bendera Organisasi jika ada','col2','Dokumen gambar, ukuran mak 1Mb')}</div>${section('12. Surat Pernyataan dan Kepatuhan','Pernyataan sesuai ketentuan yang harus disetujui ORMAS') }<div class="form-grid">${checkList('Pernyataan ORMAS',['Tidak berafiliasi secara kelembagaan dengan partai politik tertentu','Tidak terjadi konflik kepengurusan','Nama, lambang, bendera, simbol, atribut, dan/atau cap stempel belum digunakan oleh ORMAS lain','Bersedia menertibkan kegiatan, pengurus, dan/atau anggota organisasi','Bersedia menyampaikan laporan perkembangan dan kegiatan organisasi setiap akhir tahun','Bertanggung jawab terhadap keabsahan seluruh data, informasi, dan dokumen yang diserahkan','Tidak akan menyalahgunakan SKT'])}</div>${section('13. Review dan Submit','Konfirmasi akhir sebelum pengajuan dikirim')}<div class="review-card"><label class="check-item"><input type="checkbox" checked> Saya menyatakan bahwa seluruh data dan dokumen yang diinput adalah benar dan dapat dipertanggungjawabkan.</label><div class="field col4"><label>Catatan Tambahan dari ORMAS jika ada</label><textarea></textarea></div></div><div class="form-action-line"><button class="btn" onclick="go('#ormas-portal')">Kembali</button><button class="btn blue" onclick="toast('Mockup: Formulir Pengajuan SKT berhasil dikirim')">Kirim Pengajuan SKT</button></div></div>`;}
-function pengurusSection(title, role){return `${section(title,'Biodata pengurus organisasi')}<div class="form-grid">${field('Nama '+role,'col2')}${field('NIK '+role,'col2')}${selectField('Agama '+role,['Islam','Kristen','Katolik','Hindu','Buddha','Konghucu','Lainnya'],'col2')}${field('Kewarganegaraan '+role,'col2','text','WNI')}${selectField('Jenis Kelamin '+role,['Laki-laki','Perempuan'],'col2')}${field('Tempat Lahir '+role,'col2')}${field('Tanggal Lahir '+role,'col2','date')}${selectField('Status Perkawinan '+role,['Belum Kawin','Kawin','Cerai Hidup','Cerai Mati'],'col2')}<div class="field col4"><label>Alamat ${role}</label><textarea></textarea></div>${field('Pekerjaan '+role,'col2')}${field('Nomor HP '+role,'col2')}</div>`;}
-function activeReportPage(){return `${header()}<main class="page"><div class="container"><div class="crumb">Beranda / Layanan / Pelaporan Keaktifan ORMAS</div><div class="app-form-layout"><aside class="stepper-card"><h3>Pelaporan Keaktifan ORMAS</h3><p>Menu untuk ORMAS melaporkan kegiatan yang telah dilaksanakan secara berkala.</p><div class="step-list"><span>1. Identitas ORMAS</span><span>2. Periode Pelaporan</span><span>3. Detail Kegiatan</span><span>4. Dampak & Peserta</span><span>5. Upload Bukti Kegiatan</span><span>6. Review</span></div><div class="info-box"><b>Untuk Dashboard</b><br>Data ini dapat menjadi indikator ORMAS aktif, jumlah kegiatan, bidang kegiatan aktif, dan wilayah kegiatan.</div><button class="btn" onclick="go('#ormas-portal')">Kembali ke Portal</button></aside><section class="form-card">${activityFormContent()}</section></div></div></main>${footer()}`;}
-function activityFormContent(){return `<div>${section('1. Identitas ORMAS','Data organisasi yang melaporkan kegiatan')}<div class="form-grid">${field('Nama Organisasi / ORMAS','col2','text','Jurnal Demokrasi')}${field('Nama Singkatan','col2','text','Jurdem')}${field('Email Organisasi','col2','email','jurnaldemokrasi.poldem@gmail.com')}${field('Nomor HP / WhatsApp Penanggung Jawab','col2')}${selectField('Kota / Kabupaten Sekretariat',['Jakarta Pusat','Jakarta Utara','Jakarta Barat','Jakarta Selatan','Jakarta Timur','Kepulauan Seribu','Luar DKI Jakarta'],'col2')}${field('Kecamatan','col2')}</div>${section('2. Periode Pelaporan','Periode laporan keaktifan organisasi')}<div class="form-grid">${selectField('Jenis Laporan',['Laporan Kegiatan Bulanan','Laporan Kegiatan Triwulan','Laporan Kegiatan Semester','Laporan Kegiatan Tahunan','Laporan Kegiatan Insidental'],'col2')}${field('Bulan / Periode Kegiatan','col2','month')}${field('Tahun Kegiatan','col2','number','2026')}${field('Tanggal Pengisian Laporan','col2','date')}</div>${section('3. Detail Kegiatan','Informasi kegiatan yang sudah dilaksanakan')}<div class="form-grid">${field('Nama Kegiatan','col2')}${selectField('Bidang Kegiatan',['Sosial','Keagamaan','Pendidikan','Kepemudaan','Kebudayaan','Lingkungan','Kesehatan','Kemanusiaan','Profesi','Lainnya'],'col2')}${field('Tanggal Kegiatan','col2','date')}${field('Lokasi Kegiatan','col2')}<div class="field col4"><label>Ringkasan Kegiatan</label><textarea placeholder="Jelaskan singkat kegiatan yang telah dilaksanakan"></textarea></div><div class="field col4"><label>Tujuan dan Manfaat Kegiatan</label><textarea></textarea></div></div>${section('4. Peserta dan Kolaborasi','Data kuantitatif agar dapat ditampilkan di dashboard')}<div class="form-grid">${field('Jumlah Peserta / Penerima Manfaat','col2','number')}${field('Jumlah Pengurus yang Terlibat','col2','number')}${selectField('Apakah melibatkan pihak lain?',['Ya','Tidak'],'col2')}${field('Nama Mitra / Instansi Terkait jika ada','col2')}</div>${section('5. Upload Bukti Kegiatan','Unggah minimal satu bukti kegiatan agar dapat diverifikasi')}<div class="form-grid">${file('Laporan Singkat Kegiatan','col2','Dokumen .pdf, ukuran mak 1Mb')}${file('Foto Kegiatan','col2','Dokumen gambar, ukuran mak 1Mb')}${file('Daftar Hadir Peserta jika ada','col2','Dokumen .pdf/gambar, ukuran mak 1Mb')}${file('Undangan / Surat Tugas / Rundown jika ada')}${file('Materi / Publikasi Kegiatan jika ada')}${file('Dokumen Pendukung Lainnya jika ada')}</div>${section('6. Review dan Submit','Konfirmasi akhir pelaporan keaktifan')}<div class="review-card"><label class="check-item"><input type="checkbox" checked> Saya menyatakan bahwa laporan kegiatan dan bukti yang diunggah adalah benar dan dapat dipertanggungjawabkan.</label><div class="field col4"><label>Catatan Tambahan</label><textarea></textarea></div></div><div class="form-action-line"><button class="btn" onclick="go('#ormas-portal')">Kembali</button><button class="btn blue" onclick="toast('Mockup: Pelaporan keaktifan ORMAS berhasil dikirim')">Kirim Laporan Keaktifan</button></div></div>`;}
-function render(){const route=location.hash||'#home'; if(route==='#home') app.innerHTML=homePage(); else if(route==='#ormas-portal') app.innerHTML=portalPage(); else if(route==='#public-dashboard') app.innerHTML=publicDashboard(); else if(route==='#application') app.innerHTML=applicationPage(); else if(route==='#skt-form') app.innerHTML=sktFormPage(); else if(route==='#activity-report') app.innerHTML=activeReportPage(); else if(route==='#admin-dashboard') app.innerHTML=adminDashboard(); else if(route==='#admin-requests') app.innerHTML=adminRequests(); else if(route==='#admin-detail') app.innerHTML=adminDetail(); else app.innerHTML=homePage(); window.scrollTo(0,0);}
-window.addEventListener('hashchange',render); render();
-
-/* === UPDATED MOCKUP: verified-account flow + internal monitoring for SKT and keaktifan === */
-const employeeRequestsV2 = [
-  {ticket:'SKT-2026-0711', date:'11 Juli 2026', service:'Formulir Pengajuan SKT ORMAS', type:'Pendaftaran SKT Baru', org:'Forum Pemuda Betawi Bersatu', wilayah:'Jakarta Timur', status:'Diajukan', docs:'17/19', sla:'2 hari', bidang:'Kepemudaan'},
-  {ticket:'AKT-2026-0710', date:'10 Juli 2026', service:'Pelaporan Keaktifan ORMAS', type:'Laporan Kegiatan Triwulan', org:'Komunitas Lingkungan Hijau Jakarta', wilayah:'Jakarta Utara', status:'Diajukan', docs:'4/6', sla:'1 hari', bidang:'Lingkungan'},
-  {ticket:'SKT-2026-0708', date:'08 Juli 2026', service:'Formulir Pengajuan SKT ORMAS', type:'Perpanjangan / Pembaruan Data', org:'Jurnal Demokrasi', wilayah:'Jakarta Pusat', status:'Koreksi', docs:'15/19', sla:'5 hari', bidang:'Sosial'},
-  {ticket:'AKT-2026-0707', date:'07 Juli 2026', service:'Pelaporan Keaktifan ORMAS', type:'Laporan Kegiatan Bulanan', org:'Yayasan Peduli Pendidikan Anak Bangsa', wilayah:'Jakarta Selatan', status:'Disetujui', docs:'6/6', sla:'Selesai', bidang:'Pendidikan'},
-  {ticket:'0NXyXyzbwoAm', date:'01 Juli 2026', service:'Pendaftaran Ormas', type:'Badan Hukum', org:'Jurnal Demokrasi', wilayah:'Jakarta Pusat', status:'Diajukan', docs:'3/3', sla:'2 hari', bidang:'Sosial'},
-  {ticket:'zbOYNlzbwoAm', date:'07 Juli 2026', service:'Pendaftaran Ormas', type:'Non-Badan Hukum', org:'Forum Pemuda Betawi Bersatu', wilayah:'Jakarta Timur', status:'Selesai - Disetujui oleh Kemendagri', docs:'21/21', sla:'Selesai', bidang:'Kepemudaan'},
-  {ticket:'RBaBO7zbwoAm', date:'13 Mei 2026', service:'Pendaftaran Ormas', type:'Badan Hukum', org:'Yayasan Peduli Pendidikan Anak Bangsa', wilayah:'Jakarta Selatan', status:'Diajukan', docs:'2/3', sla:'4 hari', bidang:'Pendidikan'},
-  {ticket:'Y8P8ygzbwoAm', date:'10 Mei 2026', service:'Pendaftaran Ormas', type:'Badan Hukum', org:'Lembaga Dakwah dan Sosial Al-Ikhlas', wilayah:'Jakarta Barat', status:'Disetujui', docs:'3/3', sla:'Selesai', bidang:'Keagamaan'},
-  {ticket:'mWba0jzbwoAm', date:'05 Mei 2026', service:'Pendaftaran Ormas', type:'Badan Hukum', org:'Komunitas Lingkungan Hijau Jakarta', wilayah:'Jakarta Utara', status:'Koreksi', docs:'1/3', sla:'6 hari', bidang:'Lingkungan'}
+const fieldData = [
+  { name: 'Sosial', total: 1842 },
+  { name: 'Keagamaan', total: 1538 },
+  { name: 'Pendidikan', total: 1262 },
+  { name: 'Kepemudaan', total: 934 },
+  { name: 'Kebudayaan', total: 712 },
+  { name: 'Lingkungan', total: 554 }
 ];
-function requestRows(limit=7, filter='all'){
-  const rows = filter==='all' ? employeeRequestsV2 : employeeRequestsV2.filter(r => r.service.includes(filter));
-  return rows.slice(0,limit).map((r,i)=>`<tr><td>${i+1}</td><td><a class="click-link" onclick="go('#admin-detail')">${r.ticket}</a></td><td>${r.date}</td><td><b>${r.service}</b><br><small>${r.org} • ${r.type}</small></td><td>${r.wilayah}</td><td>${statusBadge(r.status)}</td><td>${r.docs}</td><td>${r.sla}</td></tr>`).join('');
+
+const monthlyReports = [
+  { month: 'Jan', total: 82 },
+  { month: 'Feb', total: 96 },
+  { month: 'Mar', total: 118 },
+  { month: 'Apr', total: 134 },
+  { month: 'Mei', total: 151 },
+  { month: 'Jun', total: 169 },
+  { month: 'Jul', total: 184 }
+];
+
+const publicDirectory = [
+  {
+    name: 'Jurnal Demokrasi',
+    chair: 'Hendra Irawan',
+    address: 'Gambir, Jakarta Pusat',
+    field: 'Pendidikan Politik',
+    region: 'Jakarta Pusat',
+    status: 'Aktif'
+  },
+  {
+    name: 'Gerakan Anti Narkoba Nasional',
+    chair: 'Rizky Pratama',
+    address: 'Cipayung, Jakarta Timur',
+    field: 'Sosial',
+    region: 'Jakarta Timur',
+    status: 'Aktif'
+  },
+  {
+    name: 'Yayasan Peduli Pendidikan Anak Bangsa',
+    chair: 'Nur Aisyah',
+    address: 'Pasar Minggu, Jakarta Selatan',
+    field: 'Pendidikan',
+    region: 'Jakarta Selatan',
+    status: 'Aktif'
+  },
+  {
+    name: 'Komunitas Lingkungan Hijau Jakarta',
+    chair: 'Bima Wardana',
+    address: 'Tanjung Priok, Jakarta Utara',
+    field: 'Lingkungan',
+    region: 'Jakarta Utara',
+    status: 'Tidak Aktif'
+  },
+  {
+    name: 'Forum Pemuda Betawi Bersatu',
+    chair: 'Muhammad Fikri',
+    address: 'Cengkareng, Jakarta Barat',
+    field: 'Kepemudaan',
+    region: 'Jakarta Barat',
+    status: 'Aktif'
+  },
+  {
+    name: 'Majelis Edukasi Sosial Nusantara',
+    chair: 'Siti Rahmawati',
+    address: 'Kemayoran, Jakarta Pusat',
+    field: 'Sosial',
+    region: 'Jakarta Pusat',
+    status: 'Aktif'
+  }
+];
+
+let activityReports = [
+  {
+    id: 'AKT-2026-0710',
+    org: 'Komunitas Lingkungan Hijau Jakarta',
+    activity: 'Aksi Bersih Pesisir Jakarta Utara',
+    date: '2026-07-10',
+    field: 'Lingkungan',
+    description: 'Kegiatan gotong royong dan edukasi pengelolaan sampah pesisir.',
+    photos: 3,
+    status: 'Menunggu Verifikasi',
+    rejectionReason: ''
+  },
+  {
+    id: 'AKT-2026-0707',
+    org: 'Yayasan Peduli Pendidikan Anak Bangsa',
+    activity: 'Kelas Literasi Anak',
+    date: '2026-07-07',
+    field: 'Pendidikan',
+    description: 'Pendampingan membaca dan menulis untuk anak usia sekolah.',
+    photos: 2,
+    status: 'Disetujui',
+    rejectionReason: ''
+  },
+  {
+    id: 'AKT-2026-0628',
+    org: 'Jurnal Demokrasi',
+    activity: 'Diskusi Pendidikan Politik Warga',
+    date: '2026-06-28',
+    field: 'Sosial',
+    description: 'Forum diskusi partisipasi warga dan pendidikan politik.',
+    photos: 3,
+    status: 'Disetujui',
+    rejectionReason: ''
+  },
+  {
+    id: 'AKT-2026-0615',
+    org: 'Forum Pemuda Betawi Bersatu',
+    activity: 'Festival Seni Budaya Pemuda',
+    date: '2026-06-15',
+    field: 'Kebudayaan',
+    description: 'Pentas seni dan penguatan jejaring pemuda tingkat wilayah.',
+    photos: 1,
+    status: 'Ditolak',
+    rejectionReason: 'Foto kegiatan tidak memperlihatkan pelaksanaan kegiatan dengan jelas.'
+  }
+];
+
+let selectedActivityId = activityReports[0].id;
+
+function go(hash) {
+  location.hash = hash;
 }
-function verifiedAccountNotice(){return `<div class="verified-note"><div><b>Data ORMAS sudah terhubung dengan akun terverifikasi.</b><p>Nama organisasi, alamat, pengurus, legalitas, dan kontak utama ditampilkan sebagai data profil. ORMAS tidak perlu mengisi ulang data yang sama, cukup memperbarui jika ada perubahan.</p></div><span class="pill green">Akun Terverifikasi</span></div>`;}
-function accountSnapshot(title='Identitas ORMAS Terverifikasi'){
-  return `<div class="account-snapshot"><div class="snapshot-head"><h3>${title}</h3><span class="pill green">Data otomatis dari profil ORMAS</span></div><div class="snapshot-grid"><div><small>Nama ORMAS</small><b>Jurnal Demokrasi</b></div><div><small>Nama Singkatan</small><b>Jurdem</b></div><div><small>Email Organisasi</small><b>jurnaldemokrasi.poldem@gmail.com</b></div><div><small>Jenis ORMAS</small><b>Non Badan Hukum / SKT</b></div><div><small>Wilayah Sekretariat</small><b>Gambir, Jakarta Pusat</b></div><div><small>Ketua</small><b>Hendra Irawan</b></div><div><small>Masa Bakti</small><b>2025 sd 2030</b></div><div><small>Status Profil</small><b>Aktif dan Terverifikasi</b></div></div></div>`;
+window.go = go;
+
+function toast(message) {
+  const el = $('#toast');
+  el.textContent = message;
+  el.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
 }
-function optionalUpdateBlock(){return `<details class="optional-update"><summary>Perbarui data profil jika ada perubahan</summary><div class="form-grid">${field('Perubahan Nama/Alamat/Kontak jika ada','col2')}${field('Perubahan Pengurus jika ada','col2')}${field('Perubahan Masa Bakti jika ada','col2')}${field('Catatan perubahan lainnya','col2')}</div></details>`;}
-function sktFormPage(){return `${header()}<main class="page"><div class="container"><div class="crumb">Beranda / Pendaftaran Ormas / Pengajuan SKT</div><div class="app-form-layout skt-layout"><aside class="stepper-card"><h3>Formulir Pengajuan SKT ORMAS</h3><p>Prototype pengajuan SKT untuk ORMAS yang sudah memiliki akun terverifikasi. Data profil tidak perlu diisi ulang, hanya dikonfirmasi atau diperbarui jika ada perubahan.</p><div class="step-list"><span>1. Konfirmasi Profil ORMAS</span><span>2. Jenis Pengajuan SKT</span><span>3. Dokumen Persyaratan SKT</span><span>4. Pernyataan & Kepatuhan</span><span>5. Review dan Submit</span></div><div class="info-box"><b>Catatan UX</b><br>Jika ORMAS sudah terverifikasi, sistem mengambil data dari profil akun. Form hanya meminta data baru, perubahan, dan dokumen pendukung.</div><button class="btn" onclick="go('#ormas-portal')">Kembali ke Portal</button></aside><section class="form-card">${sktFormContent()}</section></div></div></main>${footer()}`;}
-function sktFormContent(){return `<div>${verifiedAccountNotice()}${accountSnapshot('1. Identitas ORMAS')}${optionalUpdateBlock()}${section('2. Jenis Pengajuan SKT','Pilih tujuan pengajuan agar proses verifikasi lebih tepat.')}<div class="form-grid">${selectField('Jenis Pengajuan',['Pendaftaran SKT Baru','Perpanjangan / Pembaruan Data','Perubahan Data ORMAS'],'col2')}${field('Tanggal Pengajuan','col2','date')}${field('Nomor Surat Permohonan','col2')}${field('Tanggal Surat Permohonan','col2','date')}<div class="field col4"><label>Perihal / Keterangan Pengajuan</label><textarea placeholder="Contoh: Pengajuan SKT baru / pembaruan SKT karena perubahan kepengurusan"></textarea></div></div>${section('3. Upload Dokumen Persyaratan SKT','Dokumen utama tetap perlu diunggah untuk keperluan verifikasi.')}<div class="form-grid">${file('Surat Permohonan SKT yang ditandatangani Ketua dan Sekretaris')}${file('Formulir A - Formulir Isian Data ORMAS')}${file('Formulir B - Formulir Keabsahan Dokumen')}${file('Akta Notaris yang memuat AD / ART')}${file('Program Kerja Organisasi')}${file('SK Susunan Pengurus')}${file('Biodata Pengurus Ketua, Sekretaris, dan Bendahara')}${file('Pas Foto Pengurus 4x6 terbaru','col2','Dokumen gambar, ukuran mak 1Mb')}${file('KTP Elektronik Pengurus Organisasi','col2','Dokumen gambar, ukuran mak 1Mb')}${file('NPWP Organisasi')}${file('Surat Keterangan Domisili Organisasi')}${file('Bukti Kepemilikan / Sewa / Kontrak Kantor Organisasi')}${file('Foto Kantor Sekretariat Tampak Depan dengan Papan Nama ORMAS','col2','Dokumen gambar, ukuran mak 1Mb')}${file('Surat Pernyataan Bermaterai 10.000')}${file('Rekomendasi Kementerian Agama jika bidang agama')}${file('Rekomendasi Kebudayaan / Kepercayaan jika diperlukan')}${file('Surat Persetujuan Pejabat jika nama pejabat dicantumkan dalam kepengurusan')}${file('Lambang / Logo Organisasi','col2','Dokumen gambar, ukuran mak 1Mb')}${file('Bendera Organisasi jika ada','col2','Dokumen gambar, ukuran mak 1Mb')}</div>${section('4. Surat Pernyataan dan Kepatuhan','Pernyataan sesuai ketentuan yang harus disetujui ORMAS.')}<div class="form-grid">${checkList('Pernyataan ORMAS',['Tidak berafiliasi secara kelembagaan dengan partai politik tertentu','Tidak terjadi konflik kepengurusan','Nama, lambang, bendera, simbol, atribut, dan/atau cap stempel belum digunakan oleh ORMAS lain','Bersedia menertibkan kegiatan, pengurus, dan/atau anggota organisasi','Bersedia menyampaikan laporan perkembangan dan kegiatan organisasi setiap akhir tahun','Bertanggung jawab terhadap keabsahan seluruh data, informasi, dan dokumen yang diserahkan','Tidak akan menyalahgunakan SKT'])}</div>${section('5. Review dan Submit','Konfirmasi akhir sebelum pengajuan dikirim')}<div class="review-card"><label class="check-item"><input type="checkbox" checked> Saya menyatakan bahwa profil ORMAS yang ditampilkan benar, dan dokumen yang diunggah dapat dipertanggungjawabkan.</label><div class="field col4"><label>Catatan Tambahan dari ORMAS jika ada</label><textarea></textarea></div></div><div class="form-action-line"><button class="btn" onclick="go('#ormas-portal')">Kembali</button><button class="btn blue" onclick="toast('Mockup: Formulir Pengajuan SKT berhasil dikirim')">Kirim Pengajuan SKT</button></div></div>`;}
-function activeReportPage(){return `${header()}<main class="page"><div class="container"><div class="crumb">Beranda / Layanan / Pelaporan Keaktifan ORMAS</div><div class="app-form-layout"><aside class="stepper-card"><h3>Pelaporan Keaktifan ORMAS</h3><p>Menu untuk ORMAS melaporkan kegiatan yang telah dilaksanakan secara berkala. Identitas ORMAS otomatis diambil dari akun terverifikasi.</p><div class="step-list"><span>1. Konfirmasi Identitas ORMAS</span><span>2. Periode Pelaporan</span><span>3. Detail Kegiatan</span><span>4. Dampak & Peserta</span><span>5. Upload Bukti Kegiatan</span><span>6. Review</span></div><div class="info-box"><b>Untuk Dashboard</b><br>Data ini menjadi indikator ORMAS aktif, jumlah kegiatan, bidang kegiatan aktif, wilayah kegiatan, dan dokumen bukti kegiatan.</div><button class="btn" onclick="go('#ormas-portal')">Kembali ke Portal</button></aside><section class="form-card">${activityFormContent()}</section></div></div></main>${footer()}`;}
-function activityFormContent(){return `<div>${verifiedAccountNotice()}${accountSnapshot('1. Identitas ORMAS')}${section('2. Periode Pelaporan','Periode laporan keaktifan organisasi.')}<div class="form-grid">${selectField('Jenis Laporan',['Laporan Kegiatan Bulanan','Laporan Kegiatan Triwulan','Laporan Kegiatan Semester','Laporan Kegiatan Tahunan','Laporan Kegiatan Insidental'],'col2')}${field('Bulan / Periode Kegiatan','col2','month')}${field('Tahun Kegiatan','col2','number','2026')}${field('Tanggal Pengisian Laporan','col2','date')}</div>${section('3. Detail Kegiatan','Informasi kegiatan yang sudah dilaksanakan.')}<div class="form-grid">${field('Nama Kegiatan','col2')}${selectField('Bidang Kegiatan',['Sosial','Keagamaan','Pendidikan','Kepemudaan','Kebudayaan','Lingkungan','Kesehatan','Kemanusiaan','Profesi','Lainnya'],'col2')}${field('Tanggal Kegiatan','col2','date')}${field('Lokasi Kegiatan','col2')}<div class="field col4"><label>Ringkasan Kegiatan</label><textarea placeholder="Jelaskan singkat kegiatan yang telah dilaksanakan"></textarea></div><div class="field col4"><label>Tujuan dan Manfaat Kegiatan</label><textarea></textarea></div></div>${section('4. Peserta dan Kolaborasi','Data kuantitatif agar dapat ditampilkan di dashboard.')}<div class="form-grid">${field('Jumlah Peserta / Penerima Manfaat','col2','number')}${field('Jumlah Pengurus yang Terlibat','col2','number')}${selectField('Apakah melibatkan pihak lain?',['Ya','Tidak'],'col2')}${field('Nama Mitra / Instansi Terkait jika ada','col2')}</div>${section('5. Upload Bukti Kegiatan','Unggah minimal satu bukti kegiatan agar dapat diverifikasi.')}<div class="form-grid">${file('Laporan Singkat Kegiatan','col2','Dokumen .pdf, ukuran mak 1Mb')}${file('Foto Kegiatan','col2','Dokumen gambar, ukuran mak 1Mb')}${file('Daftar Hadir Peserta jika ada','col2','Dokumen .pdf/gambar, ukuran mak 1Mb')}${file('Undangan / Surat Tugas / Rundown jika ada')}${file('Materi / Publikasi Kegiatan jika ada')}${file('Dokumen Pendukung Lainnya jika ada')}</div>${section('6. Review dan Submit','Konfirmasi akhir pelaporan keaktifan.')}<div class="review-card"><label class="check-item"><input type="checkbox" checked> Saya menyatakan bahwa laporan kegiatan dan bukti yang diunggah adalah benar dan dapat dipertanggungjawabkan.</label><div class="field col4"><label>Catatan Tambahan</label><textarea></textarea></div></div><div class="form-action-line"><button class="btn" onclick="go('#ormas-portal')">Kembali</button><button class="btn blue" onclick="toast('Mockup: Pelaporan keaktifan ORMAS berhasil dikirim')">Kirim Laporan Keaktifan</button></div></div>`;}
-function filterRow(){return `<div class="filter-row"><label>Periode<select><option>Juli 2026</option><option>Juni 2026</option><option>Mei 2026</option></select></label><label>Layanan<select><option>Semua Layanan</option><option>Pengajuan SKT</option><option>Pelaporan Keaktifan</option><option>Pendaftaran Ormas</option></select></label><label>Status<select><option>Semua Status</option><option>Diajukan</option><option>Koreksi</option><option>Disetujui</option></select></label>${mini('Pengajuan SKT Bulan Ini','48','12 koreksi, 21 disetujui')}${mini('Laporan Keaktifan','136','87 sudah diverifikasi','success')}</div>`;}
-function fullDashboard(isAdmin=false){return `<div class="dashboard-full">${filterRow()}<div class="kpi-grid">${kpi('Total ORMAS','6.842','Terdata di DKI Jakarta','blue','👥')}${kpi('Pengajuan SKT','312','Masuk tahun 2026','blue','📄')}${kpi('Laporan Keaktifan','1.284','Kegiatan dilaporkan','green','📌')}${kpi('Menunggu Verifikasi','328','Perlu diperiksa','orange','⏳')}${kpi('Perlu Revisi','117','Catatan sudah dikirim','red','⚠️')}${kpi('Surat Terbit','96','Bulan berjalan','blue','📨')}</div><div class="chart-grid"><article class="panel wide"><h3>Tren Pengajuan dan Laporan ORMAS</h3>${vBars([['Jan',920,55],['Feb',980,60],['Mar',1120,68],['Apr',1260,76],['Mei',1480,88],['Jun',1588,94],['Jul',1680,100]])}</article><article class="panel"><h3>Status Verifikasi Internal</h3>${donut([['Menunggu',328,'#fbbf24'],['Koreksi',117,'#fb923c'],['Ditolak',65,'#ef4444'],['Disetujui',742,'#22c55e']],'1.252')}</article><article class="panel wide"><h3>Sebaran ORMAS per Wilayah</h3>${vBars(wilayah)}</article><article class="panel"><h3>Layanan Masuk</h3>${barChart([['Pengajuan SKT',312,100],['Pelaporan Keaktifan',1284,100],['Pendaftaran Ormas',221,60],['Pemutakhiran Data',184,48]])}</article><article class="panel"><h3>Monitoring Pengajuan SKT</h3>${barChart([['Dokumen Lengkap',181,100],['Perlu Koreksi',74,41],['Menunggu Cek',57,32],['Surat Siap Terbit',29,16]])}</article><article class="panel"><h3>Monitoring Keaktifan ORMAS</h3>${barChart([['Laporan Masuk',1284,100],['Diverifikasi',1065,83],['Butuh Bukti Tambahan',126,10],['Belum Lapor 2026',842,66]])}</article><article class="panel"><h3>Status Kepengurusan</h3>${donut([['Aktif',5106,'#22c55e'],['Akan Berakhir',894,'#fbbf24'],['Kadaluarsa',842,'#ef4444']],'6.842')}</article><article class="panel"><h3>Kelengkapan Dokumen Utama</h3>${barChart([['SK AHU',5914,94],['SK Pengurus',6380,98],['Surat Pernyataan',6088,92],['Foto Kantor',4205,66],['Logo',6101,96],['NPWP',5430,84]])}</article><article class="panel"><h3>Bidang Kegiatan Aktif</h3>${barChart(bidang)}</article></div>${isAdmin ? dashboardTable() : publicTable() }</div>`;}
-function dashboardTable(){return `<article class="panel table-panel"><div class="panel-head"><h3>Daftar Permintaan yang Perlu Ditindaklanjuti</h3><button class="outline-btn" onclick="go('#admin-requests')">Lihat Semua →</button></div><table><thead><tr><th>No.</th><th>No. Tiket</th><th>Tgl. Pengajuan</th><th>Layanan / ORMAS</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>SLA</th></tr></thead><tbody>${requestRows(8)}</tbody></table></article>`;}
-function adminShell(content, active='dashboard'){let title='Dashboard Monitoring ORMAS'; if(active==='requests') title='Permintaan Layanan'; if(active==='skt-monitor') title='Monitoring Pengajuan SKT ORMAS'; if(active==='activity-monitor') title='Monitoring Pelaporan Keaktifan ORMAS'; return `<div class="app-shell"><aside class="sidebar"><div class="side-logo"><div class="logo-mark"></div><div><b>BAKESBANGPOL</b><small>Admin Internal</small></div></div><nav class="side-nav"><a class="${active==='dashboard'?'active':''}" href="#admin-dashboard">Dashboard Pegawai</a><a class="${active==='requests'?'active':''}" href="#admin-requests">Permintaan Layanan Ormas</a><a class="${active==='skt-monitor'?'active':''}" href="#admin-skt-monitor">Monitoring Pengajuan SKT</a><a class="${active==='activity-monitor'?'active':''}" href="#admin-activity-monitor">Monitoring Keaktifan</a><a href="#ormas-portal">Portal ORMAS</a><a href="#home">Halaman Depan</a></nav><div class="side-user"><b>Hendra Irawan</b><br><small>ASN DKI Jakarta</small></div></aside><main class="admin-main"><header class="admin-header"><div><h1>${title}</h1><p>Beranda / ${title}</p></div><div><button class="btn" onclick="go('#home')">Halaman Depan</button><button class="btn danger">Logout</button></div></header><section class="admin-content">${content}</section></main></div>`;}
-function adminDashboard(){const content = `<div class="admin-intro"><div><h2>Dashboard Pegawai BAKESBANGPOL</h2><p>Dashboard internal untuk memantau pendaftaran ORMAS, pengajuan SKT, pelaporan keaktifan, verifikasi dokumen, status surat, dan tindak lanjut.</p></div><div class="hero-actions"><button class="btn blue" onclick="go('#admin-skt-monitor')">Monitoring SKT</button><button class="btn" onclick="go('#admin-activity-monitor')">Monitoring Keaktifan</button></div></div>${fullDashboard(true)}<div class="grid-2"><article class="panel"><h3>Agenda Tindak Lanjut Hari Ini</h3><div class="task-list"><p><b>19</b> notifikasi permintaan layanan belum dibuka</p><p><b>12</b> pengajuan SKT menunggu verifikasi dokumen</p><p><b>8</b> laporan keaktifan perlu bukti tambahan</p><p><b>7</b> pengajuan melewati SLA 5 hari</p></div></article><article class="panel"><h3>Riwayat Aktivitas Verifikator</h3><div class="timeline"><div class="item"><b>SKT Disetujui</b><br><small>Forum Pemuda Betawi Bersatu • 09:20</small></div><div class="item"><b>Laporan Keaktifan Diverifikasi</b><br><small>Yayasan Peduli Pendidikan Anak Bangsa • 10:15</small></div><div class="item"><b>Koreksi Dokumen</b><br><small>Jurnal Demokrasi • 11:30</small></div></div></article></div>`; return adminShell(content,'dashboard');}
-function adminRequests(){const content=`<div class="panel"><div class="panel-head"><h2>Daftar Permintaan Layanan</h2><div><button class="btn blue">Pencarian Lanjutan</button><button class="btn">🔄</button></div></div><div class="search-row"><input placeholder="Masukkan no. tiket / nama ormas"><select><option>Semua Status</option><option>Diajukan</option><option>Koreksi</option><option>Disetujui</option></select><select><option>Semua Jenis</option><option>Pengajuan SKT</option><option>Pelaporan Keaktifan</option><option>Pendaftaran Ormas</option></select></div><table><thead><tr><th>No.</th><th>No. Tiket</th><th>Tgl. Pengajuan</th><th>Permintaan Layanan</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>SLA</th></tr></thead><tbody>${requestRows(10)}</tbody></table></div>`;return adminShell(content,'requests');}
-function adminSktMonitor(){const content=`<div class="admin-intro"><div><h2>Monitoring Pengajuan SKT ORMAS</h2><p>Halaman internal untuk memantau pengajuan SKT, kelengkapan dokumen, koreksi, dan surat yang siap diterbitkan.</p></div><button class="btn blue" onclick="go('#admin-requests')">Lihat Semua Tiket</button></div><div class="kpi-grid">${kpi('Total Pengajuan SKT','312','Tahun 2026','blue','📄')}${kpi('Menunggu Cek','57','Belum diperiksa','orange','⏳')}${kpi('Perlu Koreksi','74','Catatan dikirim','red','⚠️')}${kpi('Dokumen Lengkap','181','Siap proses','green','✅')}${kpi('Surat Siap Terbit','29','Menunggu nomor surat','blue','📨')}${kpi('Selesai','152','Sudah disetujui','green','✔')}</div><div class="chart-grid"><article class="panel wide"><h3>Tren Pengajuan SKT</h3>${vBars([['Jan',28,45],['Feb',31,52],['Mar',42,68],['Apr',39,63],['Mei',54,85],['Jun',61,100],['Jul',57,93]])}</article><article class="panel"><h3>Status Pengajuan SKT</h3>${donut([['Menunggu',57,'#fbbf24'],['Koreksi',74,'#fb923c'],['Disetujui',152,'#22c55e'],['Ditolak',29,'#ef4444']],'312')}</article><article class="panel"><h3>Dokumen SKT Paling Sering Kurang</h3>${barChart([['Surat Pernyataan',74,100],['Foto Kantor',62,84],['Formulir B',41,55],['Biodata Pengurus',35,47],['Pas Foto',29,39]])}</article><article class="panel"><h3>Jenis Pengajuan SKT</h3>${barChart([['Pendaftaran Baru',168,100],['Perpanjangan',88,52],['Perubahan Data',56,33]])}</article></div><article class="panel table-panel"><div class="panel-head"><h3>Pengajuan SKT yang Perlu Diproses</h3><button class="outline-btn">Export Excel</button></div><table><thead><tr><th>No.</th><th>No. Tiket</th><th>Tgl.</th><th>ORMAS</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>SLA</th></tr></thead><tbody>${requestRows(8,'Formulir Pengajuan SKT')}</tbody></table></article>`;return adminShell(content,'skt-monitor');}
-function adminActivityMonitor(){const content=`<div class="admin-intro"><div><h2>Monitoring Pelaporan Keaktifan ORMAS</h2><p>Halaman internal untuk melihat ORMAS yang aktif melaporkan kegiatan, bukti kegiatan, bidang kegiatan aktif, dan ORMAS yang belum melapor.</p></div><button class="btn blue" onclick="go('#admin-requests')">Lihat Laporan Masuk</button></div><div class="kpi-grid">${kpi('Laporan Kegiatan','1.284','Masuk tahun 2026','green','📌')}${kpi('Diverifikasi','1.065','Sudah valid','green','✅')}${kpi('Butuh Bukti Tambahan','126','Perlu koreksi','orange','⚠️')}${kpi('Belum Diverifikasi','93','Menunggu cek','blue','⏳')}${kpi('ORMAS Belum Lapor','842','Perlu diingatkan','red','📣')}${kpi('Peserta Tercatat','48.320','Total penerima manfaat','blue','👥')}</div><div class="chart-grid"><article class="panel wide"><h3>Tren Laporan Keaktifan</h3>${vBars([['Jan',112,46],['Feb',138,57],['Mar',166,68],['Apr',192,79],['Mei',218,90],['Jun',242,100],['Jul',216,89]])}</article><article class="panel"><h3>Status Laporan Kegiatan</h3>${donut([['Diverifikasi',1065,'#22c55e'],['Butuh Bukti',126,'#fb923c'],['Menunggu',93,'#60a5fa']],'1.284')}</article><article class="panel"><h3>Bidang Kegiatan Aktif</h3>${barChart([['Sosial',332,100],['Pendidikan',286,86],['Keagamaan',244,73],['Lingkungan',192,58],['Kepemudaan',146,44],['Kebudayaan',84,25]])}</article><article class="panel"><h3>Bukti Kegiatan Terunggah</h3>${barChart([['Foto Kegiatan',1255,98],['Laporan Singkat',1198,93],['Daftar Hadir',842,66],['Undangan/Rundown',522,41],['Materi Publikasi',468,36]])}</article></div><article class="panel table-panel"><div class="panel-head"><h3>Laporan Keaktifan yang Perlu Ditindaklanjuti</h3><button class="outline-btn">Export Excel</button></div><table><thead><tr><th>No.</th><th>No. Tiket</th><th>Tgl.</th><th>ORMAS</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>SLA</th></tr></thead><tbody>${requestRows(8,'Pelaporan Keaktifan')}</tbody></table></article>`;return adminShell(content,'activity-monitor');}
-function render(){const route=location.hash||'#home'; if(route==='#home') app.innerHTML=homePage(); else if(route==='#ormas-portal') app.innerHTML=portalPage(); else if(route==='#public-dashboard') app.innerHTML=publicDashboard(); else if(route==='#application') app.innerHTML=applicationPage(); else if(route==='#skt-form') app.innerHTML=sktFormPage(); else if(route==='#activity-report') app.innerHTML=activeReportPage(); else if(route==='#admin-dashboard') app.innerHTML=adminDashboard(); else if(route==='#admin-requests') app.innerHTML=adminRequests(); else if(route==='#admin-detail') app.innerHTML=adminDetail(); else if(route==='#admin-skt-monitor') app.innerHTML=adminSktMonitor(); else if(route==='#admin-activity-monitor') app.innerHTML=adminActivityMonitor(); else app.innerHTML=homePage(); window.scrollTo(0,0);}
+window.toast = toast;
 
-/* === FINAL PATCH: SKT/Tanda Lapor uses verified profile, no duplicate registration questions, and creates downloadable letter output === */
-const suratOutputs = [
-  {org:'Gerakan Anti Narkoba Nasional', nomor:'e-0154/PU.13.02', tanggal:'13 Mei 2026', jenis:'Tanggapan atas Laporan Keberadaan Ormas', status:'Sudah Terbit', file:'tanda-lapor-gerakan-anti-narkoba-nasional.pdf'},
-  {org:'Jurnal Demokrasi', nomor:'e-0188/PU.13.02', tanggal:'07 Juli 2026', jenis:'Tanda Lapor Keberadaan ORMAS', status:'Draft Surat', file:'tanda-lapor-jurnal-demokrasi.pdf'},
-  {org:'Forum Pemuda Betawi Bersatu', nomor:'e-0175/PU.13.02', tanggal:'21 Juni 2026', jenis:'Surat Keterangan Terdaftar / Tanda Lapor', status:'Siap Unduh', file:'tanda-lapor-forum-pemuda-betawi.pdf'}
-];
-
-function documentStatusGrid(){
-  const docs = [
-    ['Profil ORMAS', 'Tersimpan dari pendaftaran', 'green'],
-    ['Data Pengurus', 'Tersimpan dari pendaftaran', 'green'],
-    ['Alamat Sekretariat', 'Tersimpan dari pendaftaran', 'green'],
-    ['Akta / AHU / Legalitas', 'Tersimpan dari pendaftaran', 'green'],
-    ['SK Kepengurusan Terbaru', 'Perlu unggah jika berubah', 'orange'],
-    ['Surat Permohonan Tanda Lapor', 'Wajib untuk pengajuan ini', 'blue']
-  ];
-  return `<div class="doc-status-grid">${docs.map(([name,status,cls])=>`<div class="doc-status ${cls}"><b>${name}</b><span>${status}</span></div>`).join('')}</div>`;
-}
-
-function generatedLetterCard(){
-  return `<div class="letter-output-card">
-    <div class="letter-headline">
-      <div><h3>Contoh Output Setelah Diverifikasi</h3><p>Jika disetujui, ORMAS dapat mengunduh surat/tanda lapor dari akun masing-masing. File dan nomor surat berbeda untuk setiap ORMAS.</p></div>
-      <span class="pill green">Tersedia setelah verifikasi</span>
+function logoHtml() {
+  return `<a class="logo" href="#home">
+    <div class="logo-mark"></div>
+    <div>
+      <div class="logo-title">BAKESBANGPOL</div>
+      <div class="logo-sub">Provinsi DKI Jakarta</div>
     </div>
-    <div class="letter-preview">
-      <div class="letter-paper">
-        <div class="letter-kop"><b>PEMERINTAH PROVINSI DAERAH KHUSUS IBUKOTA JAKARTA</b><br>BADAN KESATUAN BANGSA DAN POLITIK</div>
-        <div class="letter-meta"><span>Nomor: e-0188/PU.13.02</span><span>07 Juli 2026</span></div>
-        <h4>Hal: Tanggapan atas Laporan Keberadaan Ormas</h4>
-        <p>Memperhatikan Surat Permohonan Ketua Jurnal Demokrasi perihal Pelaporan Keberadaan ORMAS, bersama ini disampaikan bahwa laporan keberadaan organisasi telah diterima dan dimasukkan ke dalam database ORMAS DKI Jakarta.</p>
-        <p class="sign">Kepala Badan Kesatuan Bangsa dan Politik<br><b>Provinsi DKI Jakarta</b></p>
+  </a>`;
+}
+
+function publicHeader() {
+  return `<header class="topbar">
+    <div class="container topbar-inner">
+      ${logoHtml()}
+      <nav class="nav">
+        <a href="#public-dashboard">DASHBOARD PUBLIK</a>
+        <a href="#registration">PENDAFTARAN ORMAS</a>
+        <a href="#ormas-login">LOGIN ORMAS</a>
+      </nav>
+      <div class="header-actions">
+        <button class="btn blue" onclick="go('#ormas-portal')">Menu ORMAS</button>
+        <button class="profile-btn" title="Dashboard Admin" onclick="go('#admin-dashboard')">👤</button>
       </div>
-      <div class="letter-actions"><button class="btn blue" onclick="toast('Mockup: mengunduh surat tanda lapor khusus ORMAS ini')">Unduh Surat PDF</button><button class="btn" onclick="toast('Mockup: membuka pratinjau surat')">Pratinjau</button></div>
     </div>
+  </header>`;
+}
+
+function footer() {
+  return `<footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <h4>BAKESBANGPOL</h4>
+        <p>Portal informasi dan layanan Organisasi Kemasyarakatan Provinsi DKI Jakarta.</p>
+      </div>
+      <div style="text-align:center">
+        ${logoHtml()}
+        <p>Jalan Kebon Sirih Nomor 18 Blok H<br>Lantai 15 Jakarta Pusat 10110</p>
+      </div>
+      <div>
+        <p>✉ bakesbangpol.dki@gmail.com</p>
+        <p>☏ (021) 3800590</p>
+      </div>
+    </div>
+    <div class="container footer-copy">© 2026 Prototype Pengembangan Website ORMAS BAKESBANGPOL.</div>
+  </footer>`;
+}
+
+function statusBadge(status) {
+  const cls = status === 'Disetujui' || status === 'Aktif'
+    ? 'green'
+    : status === 'Ditolak' || status === 'Tidak Aktif'
+      ? 'red'
+      : 'orange';
+  return `<span class="pill ${cls}">${status}</span>`;
+}
+
+function kpi(title, value, description, color = 'blue', icon = '●') {
+  return `<article class="kpi ${color}">
+    <div class="kpi-icon">${icon}</div>
+    <div>
+      <small>${title}</small>
+      <strong>${value}</strong>
+      <span>${description}</span>
+    </div>
+  </article>`;
+}
+
+function horizontalBars(items) {
+  const max = Math.max(...items.map(item => item.total));
+  return `<div class="chart-bars">${items.map(item => `
+    <div class="bar-row">
+      <span>${item.name}</span>
+      <div class="bar"><i style="width:${Math.round(item.total / max * 100)}%"></i></div>
+      <b>${item.total.toLocaleString('id-ID')}</b>
+    </div>`).join('')}</div>`;
+}
+
+function verticalBars(items) {
+  const max = Math.max(...items.map(item => item.total));
+  return `<div class="vbars">${items.map(item => `
+    <div class="vbar">
+      <b>${item.total}</b>
+      <i style="height:${Math.max(12, Math.round(item.total / max * 100))}%"></i>
+      <span>${item.month || item.name}</span>
+    </div>`).join('')}</div>`;
+}
+
+function mapPanel() {
+  return `<div class="jakarta-map">
+    <span class="tag p1">Jakarta Barat<br><b>1.450</b></span>
+    <span class="tag p2">Jakarta Pusat<br><b>1.205</b></span>
+    <span class="tag p3">Jakarta Utara<br><b>1.340</b></span>
+    <span class="tag p4">Jakarta Selatan<br><b>1.210</b></span>
+    <span class="tag p5">Jakarta Timur<br><b>1.460</b></span>
+    <span class="tag p6">Kep. Seribu<br><b>177</b></span>
   </div>`;
 }
 
-function optionalProfileChangeBlock(){
-  return `<div class="change-box">
-    <h4>Apakah ada perubahan data profil?</h4>
-    <p>Data utama sudah berasal dari pendaftaran/profil ORMAS. Bagian ini hanya diisi jika ada perubahan, supaya ORMAS tidak mengisi data yang sama dua kali.</p>
-    <div class="form-grid">
-      ${checkList('Jenis Perubahan Data Jika Ada', ['Tidak ada perubahan data', 'Perubahan alamat/kontak sekretariat', 'Perubahan pengurus', 'Perubahan masa bakti kepengurusan', 'Perubahan cabang/unit/sayap organisasi', 'Perubahan dokumen legalitas'])}
-      <div class="field col4"><label>Uraian Perubahan Data</label><textarea placeholder="Jelaskan perubahan data secara singkat. Kosongkan jika tidak ada perubahan."></textarea></div>
-      ${file('Dokumen pendukung perubahan data jika ada', 'col2', 'Dokumen .pdf/gambar, ukuran mak 1Mb')}
-    </div>
+function homePage() {
+  return `${publicHeader()}
+    <main>
+      <section class="container hero">
+        <div class="hero-frame">
+          <div class="hero-bg-grid"></div>
+          <div class="hero-badge"><span>▣</span><span>BAKESBANGPOL</span></div>
+          <div class="hero-title-center">Website Organisasi Kemasyarakatan</div>
+          <h1>Layanan ORMAS</h1>
+        </div>
+      </section>
+      <section class="container">
+        <div class="section-head">
+          <div class="section-title">
+            <div class="title-logo"></div>
+            <div><h2>Layanan <span>ORMAS</span></h2><div class="under"></div></div>
+          </div>
+        </div>
+        <div class="cards-3">
+          <article class="service-card" onclick="go('#public-dashboard')">
+            <div class="mini-logo"></div>
+            <h3>Dashboard Publik</h3>
+            <p>Informasi agregat, tren laporan keberadaan, peta sebaran, direktori, dan ringkasan ORMAS per wilayah.</p>
+          </article>
+          <article class="service-card" onclick="go('#registration')">
+            <div class="mini-logo"></div>
+            <h3>Form Pendaftaran ORMAS</h3>
+            <p>Pengembangan form existing dengan pilihan Bidang Wilayah berbasis master dan penambahan Periode ORMAS.</p>
+          </article>
+          <article class="service-card" onclick="go('#ormas-login')">
+            <div class="mini-logo"></div>
+            <h3>Pelaporan Keaktifan ORMAS</h3>
+            <p>ORMAS login untuk melaporkan satu kegiatan per laporan dengan maksimal tiga foto.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+    ${footer()}`;
+}
+
+function portalPage() {
+  return `${publicHeader()}
+    <main class="page">
+      <div class="container">
+        <div class="portal-hero">
+          <div>
+            <span class="pill cyan">Menu Pendaftaran ORMAS</span>
+            <h1>Layanan Website ORMAS</h1>
+            <p>Pilih modul sesuai kebutuhan pengguna.</p>
+          </div>
+          <button class="btn light" onclick="go('#home')">Kembali ke Beranda</button>
+        </div>
+        <div class="quick-grid module-grid">
+          <article class="quick-card" onclick="go('#public-dashboard')"><h3>Dashboard Publik</h3><p>Dapat diakses masyarakat tanpa login.</p><button class="btn blue">Buka Dashboard</button></article>
+          <article class="quick-card" onclick="go('#registration')"><h3>Form Pendaftaran</h3><p>Form existing dengan Bidang Wilayah dan Periode ORMAS.</p><button class="btn blue">Isi Form</button></article>
+          <article class="quick-card" onclick="go('#ormas-login')"><h3>Login ORMAS</h3><p>Masuk untuk menyampaikan pelaporan keaktifan.</p><button class="btn blue">Login</button></article>
+          <article class="quick-card" onclick="go('#admin-dashboard')"><h3>Dashboard Admin</h3><p>Monitoring, verifikasi laporan, dan pembaruan status keaktifan.</p><button class="btn">Buka Admin</button></article>
+        </div>
+      </div>
+    </main>
+    ${footer()}`;
+}
+
+function publicDirectoryRows() {
+  return publicDirectory.map((item, index) => `
+    <tr data-region="${item.region}" data-field="${item.field}">
+      <td>${index + 1}</td>
+      <td><b>${item.name}</b></td>
+      <td>${item.chair}</td>
+      <td>${item.address}</td>
+      <td>${item.field}</td>
+      <td>${item.region}</td>
+      <td>${statusBadge(item.status)}</td>
+    </tr>`).join('');
+}
+
+function publicDashboard() {
+  return `${publicHeader()}
+    <main class="page public-only">
+      <div class="container">
+        <div class="public-top">
+          <section class="public-hero">
+            <span class="pill cyan">Tanpa Login</span>
+            <h1>Dashboard Publik ORMAS</h1>
+            <p>Informasi agregat keberadaan dan keaktifan ORMAS di Provinsi DKI Jakarta.</p>
+          </section>
+        </div>
+
+        <div class="filter-row public-filter-row">
+          <label>Periode Data
+            <select id="publicPeriod"><option>Juli 2026</option><option>Juni 2026</option><option>Mei 2026</option></select>
+          </label>
+          <label>Wilayah
+            <select id="publicRegion" onchange="filterPublicDirectory()">
+              <option value="">Seluruh DKI Jakarta</option>
+              ${regionData.map(item => `<option value="${item.name}">${item.name}</option>`).join('')}
+            </select>
+          </label>
+          <label>Bidang Kegiatan
+            <select id="publicField" onchange="filterPublicDirectory()">
+              <option value="">Semua Bidang</option>
+              ${fieldData.map(item => `<option value="${item.name}">${item.name}</option>`).join('')}
+              <option value="Pendidikan Politik">Pendidikan Politik</option>
+            </select>
+          </label>
+          <article class="mini-card"><small>Total Wilayah</small><strong>6</strong><span>Kota/Kab Administrasi</span></article>
+          <article class="mini-card success"><small>Data Terakhir</small><strong>Juli 2026</strong><span>Diperbarui berkala</span></article>
+        </div>
+
+        <div class="kpi-grid">
+          ${kpi('Total ORMAS Terdata', '6.842', 'Rekap agregat se-DKI Jakarta', 'blue', '👥')}
+          ${kpi('Berbadan Hukum', '3.256', '47,6% dari total ORMAS', 'green', '✓')}
+          ${kpi('Non Badan Hukum / SKT', '3.586', '52,4% dari total ORMAS', 'yellow', '▤')}
+          ${kpi('Kepengurusan Aktif', '5.106', '74,7% dari total ORMAS', 'green', '31')}
+          ${kpi('Bidang Terbanyak', 'Sosial', '1.842 ORMAS', 'blue', '◆')}
+          ${kpi('Wilayah Terbanyak', 'Jakarta Timur', '1.460 ORMAS', 'red', '⌖')}
+        </div>
+
+        <div class="chart-grid">
+          <article class="panel wide">
+            <h3>Grafik Tren Laporan Keberadaan ORMAS</h3>
+            <p class="muted">Jumlah ORMAS berbadan hukum yang melaporkan keberadaannya setiap bulan.</p>
+            ${verticalBars(monthlyReports)}
+          </article>
+          <article class="panel">
+            <h3>Ringkasan ORMAS per Wilayah</h3>
+            ${horizontalBars(regionData)}
+          </article>
+          <article class="panel map-panel wide">
+            <h3>Peta Sebaran ORMAS</h3>
+            <p class="muted">Pilih wilayah pada filter untuk menampilkan detail direktori di bawah.</p>
+            ${mapPanel()}
+          </article>
+          <article class="panel">
+            <h3>Bidang Kegiatan</h3>
+            ${horizontalBars(fieldData)}
+          </article>
+        </div>
+
+        <article class="panel table-panel public-directory-panel">
+          <div class="panel-head">
+            <div><h3>Direktori ORMAS</h3><p class="muted">Daftar ORMAS yang dapat dilihat masyarakat.</p></div>
+            <button class="outline-btn" onclick="resetPublicFilter()">Reset Filter</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>No.</th><th>Nama ORMAS</th><th>Nama Ketua</th><th>Alamat</th><th>Bidang</th><th>Wilayah</th><th>Status Keaktifan</th></tr></thead>
+              <tbody id="publicDirectoryBody">${publicDirectoryRows()}</tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </main>
+    ${footer()}`;
+}
+
+window.filterPublicDirectory = function () {
+  const region = $('#publicRegion')?.value || '';
+  const field = $('#publicField')?.value || '';
+  $$('#publicDirectoryBody tr').forEach(row => {
+    const regionMatch = !region || row.dataset.region === region;
+    const fieldMatch = !field || row.dataset.field === field;
+    row.hidden = !(regionMatch && fieldMatch);
+  });
+};
+
+window.resetPublicFilter = function () {
+  if ($('#publicRegion')) $('#publicRegion').value = '';
+  if ($('#publicField')) $('#publicField').value = '';
+  window.filterPublicDirectory();
+};
+
+function registrationPage() {
+  return `${publicHeader()}
+    <main class="page">
+      <div class="container">
+        <div class="portal-hero compact-hero">
+          <div>
+            <span class="pill cyan">Pengembangan Modul Existing</span>
+            <h1>Form Pendaftaran ORMAS</h1>
+            <p>Contoh perubahan form sesuai kebutuhan pengembangan.</p>
+          </div>
+        </div>
+        <div class="app-form-layout registration-layout">
+          <aside class="stepper-card">
+            <h3>Perubahan Utama</h3>
+            <div class="step-list">
+              <span>1. Isi Data ORMAS</span>
+              <span>2. Pilih Bidang Wilayah</span>
+              <span>3. Isi Periode ORMAS</span>
+              <span>4. Submit Data</span>
+              <span>5. Tersimpan ke Database</span>
+            </div>
+            <div class="info-box">
+              <b>Bidang Wilayah</b>
+              <p>Diubah dari textbox menjadi dropdown dengan data master Bidang Kesbangpol.</p>
+            </div>
+          </aside>
+          <section class="form-card">
+            <form id="registrationForm" onsubmit="submitRegistration(event)">
+              <div class="form-section-title"><h3>Data ORMAS</h3><p>Form existing yang disempurnakan.</p></div>
+              <div class="form-grid">
+                <div class="field col2"><label>Nama ORMAS</label><input required placeholder="Masukkan nama ORMAS"></div>
+                <div class="field"><label>Jenis ORMAS</label><select required><option value="">Pilih jenis</option><option>Badan Hukum</option><option>Non Badan Hukum / SKT</option></select></div>
+                <div class="field"><label>Email Organisasi</label><input type="email" required placeholder="nama@organisasi.id"></div>
+                <div class="field col4"><label>Alamat Sekretariat</label><textarea required placeholder="Masukkan alamat sekretariat"></textarea></div>
+                <div class="field col2"><label>Bidang Wilayah</label><select required><option value="">Pilih Bidang Kesbangpol</option><option>Bidang Bina Ideologi dan Wawasan Kebangsaan</option><option>Bidang Politik dan Demokrasi</option><option>Bidang Ketahanan Ekonomi, Seni, Budaya, Agama dan Kemasyarakatan</option><option>Bidang Kewaspadaan</option></select></div>
+                <div class="field"><label>Periode ORMAS Mulai</label><input type="date" required></div>
+                <div class="field"><label>Periode ORMAS Berakhir</label><input type="date" required></div>
+              </div>
+              <div class="form-action-line"><button type="button" class="outline-btn" onclick="go('#ormas-portal')">Kembali</button><button type="submit" class="primary-btn">Submit Data</button></div>
+            </form>
+          </section>
+        </div>
+      </div>
+    </main>
+    ${footer()}`;
+}
+
+window.submitRegistration = function (event) {
+  event.preventDefault();
+  toast('Data pendaftaran ORMAS tersimpan ke database (simulasi).');
+  event.target.reset();
+};
+
+function loginPage() {
+  return `${publicHeader()}
+    <main class="page login-page">
+      <div class="container login-wrap">
+        <section class="form-card login-card">
+          <div class="mini-logo"></div>
+          <h1>Login ORMAS</h1>
+          <p class="muted">Login diperlukan untuk mengakses menu Pelaporan Keaktifan ORMAS.</p>
+          <form onsubmit="loginOrmas(event)">
+            <div class="field"><label>Email</label><input type="email" value="ormas@example.org" required></div>
+            <div class="field"><label>Password</label><input type="password" value="12345678" required></div>
+            <button class="primary-btn full-button" type="submit">Login</button>
+          </form>
+        </section>
+      </div>
+    </main>
+    ${footer()}`;
+}
+
+window.loginOrmas = function (event) {
+  event.preventDefault();
+  toast('Login berhasil (simulasi).');
+  go('#activity-report');
+};
+
+const linkedOrmasAccountsV5 = [
+  {
+    id: 'jurnal-demokrasi',
+    name: 'Jurnal Demokrasi',
+    shortName: 'Jurdem',
+    type: 'Non Badan Hukum / SKT',
+    region: 'Gambir, Jakarta Pusat',
+    status: 'Aktif dan Terverifikasi'
+  },
+  {
+    id: 'forum-pemuda-betawi',
+    name: 'Forum Pemuda Betawi Bersatu',
+    shortName: 'FPBB',
+    type: 'Badan Hukum',
+    region: 'Cengkareng, Jakarta Barat',
+    status: 'Aktif dan Terverifikasi'
+  },
+  {
+    id: 'yayasan-pendidikan-anak',
+    name: 'Yayasan Peduli Pendidikan Anak Bangsa',
+    shortName: 'YPPA',
+    type: 'Non Badan Hukum / SKT',
+    region: 'Pasar Minggu, Jakarta Selatan',
+    status: 'Aktif dan Terverifikasi'
+  }
+];
+
+function selectedActivityOrmasPreviewV5(orgId = linkedOrmasAccountsV5[0].id) {
+  const org = linkedOrmasAccountsV5.find(item => item.id === orgId) || linkedOrmasAccountsV5[0];
+  return `<div class="org-selected-preview-v5">
+    <div><small>Nama ORMAS</small><b>${org.name}</b></div>
+    <div><small>Nama Singkatan</small><b>${org.shortName}</b></div>
+    <div><small>Jenis ORMAS</small><b>${org.type}</b></div>
+    <div><small>Wilayah Sekretariat</small><b>${org.region}</b></div>
+    <div><small>Status Profil</small><span class="pill green">${org.status}</span></div>
   </div>`;
 }
 
-function sktFormPage(){
-  return `${header()}<main class="page"><div class="container"><div class="crumb">Beranda / Pendaftaran Ormas / Tanda Lapor / SKT</div><div class="app-form-layout skt-layout"><aside class="stepper-card"><h3>Pengajuan Tanda Lapor / SKT ORMAS</h3><p>Untuk ORMAS yang sudah memiliki akun/profil terverifikasi, data identitas tidak perlu diisi ulang. Sistem mengambil data dari profil dan hanya meminta dokumen atau perubahan yang relevan.</p><div class="step-list"><span>1. Konfirmasi Profil Terverifikasi</span><span>2. Pilih Jenis Pengajuan</span><span>3. Perubahan Data Jika Ada</span><span>4. Dokumen Pengajuan</span><span>5. Review & Submit</span><span>6. Output Surat Setelah Verifikasi</span></div><div class="info-box"><b>Prinsip Form</b><br>Data yang sudah ada di menu Pendaftaran ORMAS tidak ditanyakan ulang di sini. Menu ini fokus pada pengajuan surat/tanda lapor dan proses verifikasi.</div><button class="btn" onclick="go('#ormas-portal')">Kembali ke Portal</button></aside><section class="form-card">${sktFormContent()}</section></div></div></main>${footer()}`;
+window.updateActivityOrmasV5 = function (orgId) {
+  const preview = document.getElementById('activityOrmasPreviewV5');
+  if (preview) preview.innerHTML = selectedActivityOrmasPreviewV5(orgId);
+};
+
+function activityReportPage() {
+  return `${publicHeader()}
+    <main class="page">
+      <div class="container">
+        <div class="portal-hero compact-hero">
+          <div>
+            <span class="pill cyan">Modul Baru</span>
+            <h1>Pelaporan Keaktifan ORMAS</h1>
+            <p>Satu laporan mewakili satu kegiatan. Foto maksimal tiga file.</p>
+          </div>
+        </div>
+        <div class="app-form-layout activity-layout">
+          <aside class="stepper-card">
+            <h3>Alur Pelaporan</h3>
+            <div class="step-list">
+              <span>1. Login ORMAS</span>
+              <span>2. Pilih ORMAS Pelapor</span>
+              <span>3. Buka Menu Pelaporan</span>
+              <span>4. Isi Form</span>
+              <span>5. Upload Foto</span>
+              <span>6. Submit</span>
+              <span>7. Menunggu Verifikasi</span>
+            </div>
+            <div class="info-box">
+              <b>Business Rules</b>
+              <p>Berlaku untuk seluruh ORMAS, maksimal tiga foto, dan satu laporan untuk satu kegiatan.</p>
+            </div>
+            <div class="info-box org-policy-note-v5">
+              <b>Catatan Pengelolaan Akun</b>
+              <p>Prototype ini mengakomodasi kemungkinan satu akun terhubung dengan satu atau beberapa ORMAS. Jika kebijakan final menetapkan satu akun hanya untuk satu ORMAS, pilihan ORMAS dapat diisi otomatis dan disembunyikan. Jika satu akun boleh mengelola beberapa ORMAS, pilihan ini tetap wajib ditampilkan.</p>
+            </div>
+          </aside>
+          <section class="form-card">
+            <form id="activityForm" onsubmit="submitActivity(event)">
+              <div class="form-section-title"><h3>ORMAS Pelapor</h3><p>Pilih organisasi yang melaksanakan kegiatan dan akan tercatat sebagai pemilik laporan.</p></div>
+              <div class="org-selector-card-v5">
+                <div class="field col4">
+                  <label>Pilih ORMAS yang Melaporkan</label>
+                  <select id="activityOrgV5" required onchange="updateActivityOrmasV5(this.value)">
+                    ${linkedOrmasAccountsV5.map((org, index) => `<option value="${org.id}" ${index === 0 ? 'selected' : ''}>${org.name} (${org.shortName})</option>`).join('')}
+                  </select>
+                  <small class="muted">Akun login: <b>ormas@example.org</b>. Pastikan ORMAS yang dipilih sesuai dengan pelaksana kegiatan.</small>
+                </div>
+                <div id="activityOrmasPreviewV5">${selectedActivityOrmasPreviewV5()}</div>
+              </div>
+
+              <div class="form-section-title"><h3>Form Pelaporan Kegiatan</h3><p>Isi data satu kegiatan yang telah dilaksanakan oleh ORMAS terpilih.</p></div>
+              <div class="form-grid">
+                <div class="field col2"><label>Nama Kegiatan</label><input id="activityName" required placeholder="Masukkan nama kegiatan"></div>
+                <div class="field"><label>Tanggal Kegiatan</label><input id="activityDate" type="date" required></div>
+                <div class="field"><label>Bidang Kegiatan</label><select id="activityField" required><option value="">Pilih bidang</option>${fieldData.map(item => `<option>${item.name}</option>`).join('')}</select></div>
+                <div class="field col4"><label>Keterangan</label><textarea id="activityDescription" required placeholder="Jelaskan kegiatan secara ringkas"></textarea></div>
+                <div class="field col4"><label>Upload Foto</label><input id="activityPhotos" type="file" accept="image/*" multiple required><small class="muted">Maksimal 3 file foto. Satu laporan hanya untuk satu kegiatan.</small></div>
+              </div>
+              <div class="notice activity-notice">Setelah dikirim, laporan untuk ORMAS yang dipilih berstatus <b>Menunggu Verifikasi</b>.</div>
+              <div class="form-action-line"><button type="button" class="outline-btn" onclick="go('#ormas-portal')">Kembali</button><button type="submit" class="primary-btn">Submit Laporan</button></div>
+            </form>
+          </section>
+        </div>
+      </div>
+    </main>
+    ${footer()}`;
 }
 
-function sktFormContent(){
-  return `<div>${verifiedAccountNotice()}${accountSnapshot('1. Profil ORMAS dari Akun Terverifikasi')}${section('2. Jenis Pengajuan','Pilih tujuan pengajuan. Data profil yang sudah tersimpan tidak perlu diisi ulang.')}<div class="form-grid">
-    ${selectField('Jenis Pengajuan', ['Tanda Lapor Keberadaan ORMAS', 'Perpanjangan / Pembaruan Tanda Lapor', 'Perubahan Data pada Tanda Lapor', 'Penerbitan Ulang Surat / Tanda Lapor'], 'col2')}
-    ${field('Tanggal Pengajuan','col2','date')}
-    ${field('Nomor Surat Permohonan','col2')}
-    ${field('Tanggal Surat Permohonan','col2','date')}
-    <div class="field col4"><label>Perihal / Keterangan Pengajuan</label><textarea placeholder="Contoh: Pelaporan keberadaan ORMAS / pembaruan tanda lapor karena perubahan kepengurusan"></textarea></div>
-  </div>${section('3. Data yang Sudah Tersimpan','Tidak perlu mengunggah ulang dokumen yang masih valid, kecuali ada perubahan atau diminta verifikator.')}${documentStatusGrid()}${optionalProfileChangeBlock()}${section('4. Dokumen Pengajuan yang Dibutuhkan','Dokumen di bawah ini fokus untuk pengajuan tanda lapor/SKT. Dokumen lama cukup memakai data dari profil jika tidak berubah.')}<div class="form-grid">
-    ${file('Surat Permohonan Tanda Lapor / SKT yang ditandatangani Ketua dan Sekretaris')}
-    ${file('SK Kepengurusan terbaru jika ada perubahan atau masa bakti baru')}
-    ${file('SK Kemenkumham / AHU jika berbadan hukum atau ada perubahan legalitas')}
-    ${file('Surat Pernyataan Bermaterai 10.000')}
-    ${file('Dokumen pendukung perubahan alamat/kontak jika ada')}
-    ${file('Dokumen tambahan yang diminta verifikator jika ada')}
-  </div>${section('5. Pernyataan dan Submit','Konfirmasi bahwa data profil dan dokumen yang digunakan adalah benar.')}<div class="form-grid">${checkList('Pernyataan ORMAS', ['Profil ORMAS yang ditampilkan sudah benar atau sudah dijelaskan perubahannya', 'Dokumen yang diunggah benar dan dapat dipertanggungjawabkan', 'Tidak terjadi konflik kepengurusan', 'Bersedia menyampaikan laporan perkembangan dan kegiatan organisasi setiap akhir tahun', 'Tidak akan menyalahgunakan surat/tanda lapor yang diterbitkan'])}</div><div class="review-card"><label class="check-item"><input type="checkbox" checked> Saya menyatakan bahwa data profil, perubahan data, dan dokumen pengajuan dapat dipertanggungjawabkan.</label><div class="field col4"><label>Catatan Tambahan dari ORMAS jika ada</label><textarea></textarea></div></div><div class="form-action-line"><button class="btn" onclick="go('#ormas-portal')">Kembali</button><button class="btn blue" onclick="toast('Mockup: Pengajuan tanda lapor/SKT berhasil dikirim')">Kirim Pengajuan</button></div>${generatedLetterCard()}</div>`;
+window.submitActivity = function (event) {
+  event.preventDefault();
+  const files = $('#activityPhotos').files;
+  if (files.length > 3) {
+    toast('Foto maksimal 3 file.');
+    return;
+  }
+  const selectedOrgId = $('#activityOrgV5').value;
+  const selectedOrg = linkedOrmasAccountsV5.find(item => item.id === selectedOrgId);
+  if (!selectedOrg) {
+    toast('Pilih ORMAS yang akan melaporkan kegiatan.');
+    return;
+  }
+  const report = {
+    id: `AKT-2026-${String(activityReports.length + 100).padStart(4, '0')}`,
+    org: selectedOrg.name,
+    activity: $('#activityName').value,
+    date: $('#activityDate').value,
+    field: $('#activityField').value,
+    description: $('#activityDescription').value,
+    photos: files.length,
+    status: 'Menunggu Verifikasi',
+    rejectionReason: ''
+  };
+  activityReports.unshift(report);
+  selectedActivityId = report.id;
+  event.target.reset();
+  setTimeout(() => updateActivityOrmasV5(linkedOrmasAccountsV5[0].id), 0);
+  toast(`Laporan kegiatan ${selectedOrg.name} berhasil dikirim dan menunggu verifikasi.`);
+};
+
+function adminShell(content, active = 'dashboard') {
+  return `<div class="app-shell">
+    <aside class="sidebar">
+      <div class="side-brand">${logoHtml()}</div>
+      <nav class="side-nav">
+        <a class="${active === 'dashboard' ? 'active' : ''}" href="#admin-dashboard">Dashboard Admin</a>
+        <a class="${active === 'reports' ? 'active' : ''}" href="#admin-reports">Daftar Laporan Keaktifan</a>
+        <a href="#home">Halaman Depan</a>
+      </nav>
+      <div class="side-user"><b>Administrator</b><small>BAKESBANGPOL DKI Jakarta</small></div>
+    </aside>
+    <section class="admin-content">
+      <header class="admin-topbar"><div><h1>${active === 'reports' ? 'Daftar Laporan Keaktifan' : 'Dashboard Admin'}</h1><p>Monitoring dan verifikasi pelaporan kegiatan ORMAS</p></div><button class="btn" onclick="go('#home')">Logout</button></header>
+      <main class="admin-main">${content}</main>
+    </section>
+  </div>`;
 }
 
-function suratOutputRows(){
-  return suratOutputs.map((s,i)=>`<tr><td>${i+1}</td><td><b>${s.org}</b><br><small>${s.jenis}</small></td><td>${s.nomor}</td><td>${s.tanggal}</td><td>${statusBadge(s.status)}</td><td><button class="btn tiny" onclick="toast('Mockup: unduh ${s.file}')">Unduh PDF</button></td></tr>`).join('');
+function adminReportRows() {
+  return activityReports.map(report => `
+    <tr>
+      <td><a class="click-link" onclick="openAdminReport('${report.id}')">${report.id}</a></td>
+      <td><b>${report.org}</b></td>
+      <td>${report.activity}</td>
+      <td>${report.field}</td>
+      <td><span class="photo-count">📷 ${report.photos} foto</span></td>
+      <td>${statusBadge(report.status)}</td>
+      <td><button class="btn tiny" onclick="openAdminReport('${report.id}')">Verifikasi</button></td>
+    </tr>`).join('');
 }
 
-function adminSktMonitor(){
-  const content=`<div class="admin-intro"><div><h2>Monitoring Pengajuan Tanda Lapor / SKT ORMAS</h2><p>Halaman internal untuk memantau pengajuan yang memakai data profil ORMAS terverifikasi. Data pendaftaran tidak ditanyakan ulang; pegawai fokus pada dokumen pengajuan, perubahan data, verifikasi, dan output surat.</p></div><button class="btn blue" onclick="go('#admin-requests')">Lihat Semua Tiket</button></div>
-  <div class="kpi-grid">${kpi('Total Pengajuan','312','Tahun 2026','blue','📄')}${kpi('Menunggu Cek','57','Belum diperiksa','orange','⏳')}${kpi('Perlu Koreksi','74','Catatan dikirim','red','⚠️')}${kpi('Data Profil Valid','246','Tidak perlu isi ulang','green','👤')}${kpi('Surat Siap Terbit','29','Menunggu nomor surat','blue','📨')}${kpi('Surat Sudah Terbit','152','Dapat diunduh ORMAS','green','⬇')}</div>
-  <div class="chart-grid"><article class="panel wide"><h3>Tren Pengajuan Tanda Lapor / SKT</h3>${vBars([['Jan',28,45],['Feb',31,52],['Mar',42,68],['Apr',39,63],['Mei',54,85],['Jun',61,100],['Jul',57,93]])}</article><article class="panel"><h3>Status Pengajuan</h3>${donut([['Menunggu',57,'#fbbf24'],['Koreksi',74,'#fb923c'],['Surat Terbit',152,'#22c55e'],['Ditolak',29,'#ef4444']],'312')}</article><article class="panel"><h3>Jenis Pengajuan</h3>${barChart([['Tanda Lapor Baru',168,100],['Pembaruan',88,52],['Perubahan Data',56,33]])}</article><article class="panel"><h3>Dokumen yang Sering Diminta Ulang</h3>${barChart([['Surat Permohonan',74,100],['SK Pengurus Baru',62,84],['Surat Pernyataan',41,55],['AHU/SK Legalitas',35,47],['Dokumen Perubahan Alamat',29,39]])}</article></div>
-  <article class="panel table-panel"><div class="panel-head"><h3>Pengajuan yang Perlu Diproses</h3><button class="outline-btn">Export Excel</button></div><table><thead><tr><th>No.</th><th>No. Tiket</th><th>Tgl.</th><th>ORMAS</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>SLA</th></tr></thead><tbody>${requestRows(8,'Formulir Pengajuan SKT')}</tbody></table></article>
-  <article class="panel table-panel"><div class="panel-head"><h3>Output Surat / Tanda Lapor per ORMAS</h3><button class="outline-btn">Template Surat</button></div><table><thead><tr><th>No.</th><th>ORMAS</th><th>Nomor Surat</th><th>Tanggal</th><th>Status Output</th><th>Aksi ORMAS</th></tr></thead><tbody>${suratOutputRows()}</tbody></table></article>`;
-  return adminShell(content,'skt-monitor');
+window.openAdminReport = function (id) {
+  selectedActivityId = id;
+  go('#admin-report-detail');
+};
+
+function approvedWithinOneYear(orgName) {
+  const cutoff = new Date('2025-07-22');
+  return activityReports.some(report => report.org === orgName && report.status === 'Disetujui' && new Date(report.date) >= cutoff);
 }
 
-function adminDetail(){
-  const content=`<div class="preview-detail"><div class="panel"><h2>Detail Pengajuan Tanda Lapor / SKT</h2><p class="muted">Contoh detail internal. Data profil ORMAS diambil dari akun terverifikasi, sehingga pegawai hanya mengecek perubahan data dan dokumen pengajuan.</p><div class="stats small"><div class="stat-card"><div class="label">No. Tiket</div><div class="value">SKT-2026-0708</div></div><div class="stat-card"><div class="label">Tgl. Pengajuan</div><div class="value">08 Jul 2026</div></div><div class="stat-card"><div class="label">Jenis</div><div class="value">Perubahan Data ORMAS</div></div></div>${accountSnapshot('Profil ORMAS Terverifikasi')}<h3>Perubahan yang Diajukan</h3><table><tbody><tr><th>Jenis Perubahan</th><td>Perubahan masa bakti kepengurusan dan SK pengurus terbaru</td></tr><tr><th>Nomor Surat Permohonan</th><td>045/JURDEM/VII/2026</td></tr><tr><th>Perihal</th><td>Pembaruan tanda lapor karena perubahan kepengurusan</td></tr></tbody></table><h3>Dokumen Pengajuan</h3><table><thead><tr><th>Dokumen</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${['Surat Permohonan Tanda Lapor','SK Kepengurusan Terbaru','Surat Pernyataan Bermaterai','Dokumen Perubahan Data','SK AHU lama dari profil'].map((d,i)=>`<tr><td>📎 ${d}</td><td>${i===3?'<span class="pill orange">Perlu Cek</span>':'<span class="pill green">Ada</span>'}</td><td><a class="click-link" onclick="toast('Mockup: membuka dokumen')">Lihat</a></td></tr>`).join('')}</tbody></table>${generatedLetterCard()}</div><aside><div class="panel"><h3>Status Verifikasi</h3><p><span class="pill orange">Koreksi</span></p><label>Catatan Verifikasi</label><textarea class="note-area">Mohon unggah SK kepengurusan terbaru yang telah ditandatangani dan stempel organisasi.</textarea><button class="btn danger" onclick="toast('Mockup: catatan koreksi dikirim')">Kirim Koreksi</button> <button class="btn success" onclick="toast('Mockup: surat diterbitkan dan tersedia di akun ORMAS')">Setujui & Terbitkan Surat</button></div><div class="panel"><h3>Riwayat</h3><div class="timeline"><div class="item"><b>Diajukan</b><br><small>08 Jul 2026 oleh ORMAS</small></div><div class="item"><b>Dikoreksi</b><br><small>09 Jul 2026 oleh verifikator</small></div><div class="item"><b>Output</b><br><small>Surat PDF muncul di akun ORMAS setelah status disetujui.</small></div></div></div></aside></div>`;
-  return adminShell(content,'requests');
+function organizationStatusRows() {
+  return publicDirectory.map((item, index) => {
+    const active = approvedWithinOneYear(item.name) || item.status === 'Aktif';
+    return `<tr><td>${index + 1}</td><td><b>${item.name}</b></td><td>${active ? 'Ada laporan disetujui dalam 1 tahun' : 'Tidak ada laporan disetujui dalam 1 tahun'}</td><td>${statusBadge(active ? 'Aktif' : 'Tidak Aktif')}</td></tr>`;
+  }).join('');
 }
 
-function fullDashboard(isAdmin=false){
-  if(!isAdmin) return publicDashboardContent();
-  return `<div class="dashboard-full">${filterRow()}<div class="kpi-grid">${kpi('Total ORMAS','6.842','Terdata di DKI Jakarta','blue','👥')}${kpi('Pengajuan Tanda Lapor/SKT','312','Masuk tahun 2026','blue','📄')}${kpi('Laporan Keaktifan','1.284','Kegiatan dilaporkan','green','📌')}${kpi('Menunggu Verifikasi','328','Perlu diperiksa','orange','⏳')}${kpi('Perlu Koreksi','117','Catatan sudah dikirim','red','⚠️')}${kpi('Surat Dapat Diunduh','152','Tersedia di akun ORMAS','green','⬇')}</div><div class="chart-grid"><article class="panel wide"><h3>Tren Pengajuan dan Laporan ORMAS</h3>${vBars([['Jan',920,55],['Feb',980,60],['Mar',1120,68],['Apr',1260,76],['Mei',1480,88],['Jun',1588,94],['Jul',1680,100]])}</article><article class="panel"><h3>Status Verifikasi Internal</h3>${donut([['Menunggu',328,'#fbbf24'],['Koreksi',117,'#fb923c'],['Ditolak',65,'#ef4444'],['Surat Terbit',152,'#22c55e']],'662')}</article><article class="panel wide"><h3>Sebaran ORMAS per Wilayah</h3>${vBars(wilayah)}</article><article class="panel"><h3>Layanan Masuk</h3>${barChart([['Tanda Lapor/SKT',312,100],['Pelaporan Keaktifan',1284,100],['Pendaftaran Ormas Baru',221,60],['Pemutakhiran Data',184,48]])}</article><article class="panel"><h3>Monitoring Tanda Lapor/SKT</h3>${barChart([['Profil Valid',246,100],['Perlu Koreksi',74,30],['Menunggu Cek',57,23],['Surat Dapat Diunduh',152,62]])}</article><article class="panel"><h3>Monitoring Keaktifan ORMAS</h3>${barChart([['Laporan Masuk',1284,100],['Diverifikasi',1065,83],['Butuh Bukti Tambahan',126,10],['Belum Lapor 2026',842,66]])}</article><article class="panel"><h3>Status Kepengurusan</h3>${donut([['Aktif',5106,'#22c55e'],['Akan Berakhir',894,'#fbbf24'],['Kadaluarsa',842,'#ef4444']],'6.842')}</article><article class="panel"><h3>Output Surat</h3>${barChart([['Sudah Terbit',152,100],['Siap Terbit',29,19],['Draft Surat',44,29],['Belum Dapat Terbit',87,57]])}</article></div>${dashboardTable()}<article class="panel table-panel"><div class="panel-head"><h3>Surat/Tanda Lapor Terbaru</h3><button class="outline-btn" onclick="go('#admin-skt-monitor')">Monitoring SKT →</button></div><table><thead><tr><th>No.</th><th>ORMAS</th><th>Nomor Surat</th><th>Tanggal</th><th>Status Output</th><th>Aksi</th></tr></thead><tbody>${suratOutputRows()}</tbody></table></article></div>`;
+function adminDashboard() {
+  const waiting = activityReports.filter(item => item.status === 'Menunggu Verifikasi').length;
+  const approved = activityReports.filter(item => item.status === 'Disetujui').length;
+  const rejected = activityReports.filter(item => item.status === 'Ditolak').length;
+  const content = `<div class="kpi-grid admin-kpis">
+      ${kpi('Total Laporan', activityReports.length, 'Seluruh laporan kegiatan', 'blue', '📄')}
+      ${kpi('Menunggu Verifikasi', waiting, 'Perlu ditindaklanjuti admin', 'yellow', '⏳')}
+      ${kpi('Disetujui', approved, 'Laporan valid', 'green', '✓')}
+      ${kpi('Ditolak', rejected, 'Memiliki alasan penolakan', 'red', '×')}
+      ${kpi('ORMAS Aktif', '5.106', 'Ada laporan dalam 1 tahun', 'green', '●')}
+      ${kpi('ORMAS Tidak Aktif', '1.736', 'Tidak ada laporan dalam 1 tahun', 'red', '○')}
+    </div>
+    <div class="chart-grid admin-chart-grid">
+      <article class="panel wide"><h3>Tren Pelaporan Keaktifan</h3>${verticalBars(monthlyReports)}</article>
+      <article class="panel"><h3>Laporan per Bidang</h3>${horizontalBars(fieldData)}</article>
+    </div>
+    <article class="panel table-panel">
+      <div class="panel-head"><div><h3>Laporan Menunggu Verifikasi</h3><p class="muted">Admin dapat memilih Setuju atau Tolak.</p></div><button class="outline-btn" onclick="go('#admin-reports')">Lihat Semua</button></div>
+      <div class="table-scroll"><table><thead><tr><th>No. Laporan</th><th>Nama ORMAS</th><th>Nama Kegiatan</th><th>Bidang</th><th>Foto</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${adminReportRows()}</tbody></table></div>
+    </article>
+    <article class="panel table-panel">
+      <div class="panel-head"><div><h3>Penentuan Status ORMAS</h3><p class="muted">Ada laporan disetujui dalam satu tahun = Aktif. Tidak ada = Tidak Aktif.</p></div></div>
+      <div class="table-scroll"><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Hasil Pengecekan 1 Tahun</th><th>Status</th></tr></thead><tbody>${organizationStatusRows()}</tbody></table></div>
+    </article>`;
+  return adminShell(content, 'dashboard');
 }
 
-function render(){const route=location.hash||'#home'; if(route==='#home') app.innerHTML=homePage(); else if(route==='#ormas-portal') app.innerHTML=portalPage(); else if(route==='#public-dashboard') app.innerHTML=publicDashboard(); else if(route==='#application') app.innerHTML=applicationPage(); else if(route==='#skt-form') app.innerHTML=sktFormPage(); else if(route==='#activity-report') app.innerHTML=activeReportPage(); else if(route==='#admin-dashboard') app.innerHTML=adminDashboard(); else if(route==='#admin-requests') app.innerHTML=adminRequests(); else if(route==='#admin-detail') app.innerHTML=adminDetail(); else if(route==='#admin-skt-monitor') app.innerHTML=adminSktMonitor(); else if(route==='#admin-activity-monitor') app.innerHTML=adminActivityMonitor(); else app.innerHTML=homePage(); window.scrollTo(0,0);}
-window.addEventListener('hashchange', () => setTimeout(render, 0));
-setTimeout(render, 0);
+function adminReportsPage() {
+  const content = `<article class="panel table-panel">
+    <div class="panel-head"><div><h3>Daftar Laporan Kegiatan ORMAS</h3><p class="muted">Kolom sesuai kebutuhan: Nama ORMAS, Nama Kegiatan, Bidang, Foto, dan Status.</p></div></div>
+    <div class="admin-filter-row">
+      <label>Status<select id="adminStatusFilter" onchange="filterAdminReports()"><option value="">Semua Status</option><option>Menunggu Verifikasi</option><option>Disetujui</option><option>Ditolak</option></select></label>
+      <label>Bidang<select id="adminFieldFilter" onchange="filterAdminReports()"><option value="">Semua Bidang</option>${fieldData.map(item => `<option>${item.name}</option>`).join('')}</select></label>
+    </div>
+    <div class="table-scroll"><table><thead><tr><th>No. Laporan</th><th>Nama ORMAS</th><th>Nama Kegiatan</th><th>Bidang</th><th>Foto</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="adminReportBody">${adminReportRows()}</tbody></table></div>
+  </article>`;
+  return adminShell(content, 'reports');
+}
 
-/* === PATCH: Separate Pelaporan Keaktifan monitoring from SKT/Tanda Lapor workflow === */
-const sktRequests = [
-  {ticket:'SKT-2026-0708', date:'08 Jul 2026', jenis:'Perubahan Data ORMAS', org:'Jurnal Demokrasi', wilayah:'Jakarta Pusat', status:'Koreksi', docs:'4/5', sla:'2 hari', output:'Belum terbit'},
-  {ticket:'SKT-2026-0705', date:'05 Jul 2026', jenis:'Tanda Lapor Baru', org:'Gerakan Anti Narkoba Nasional', wilayah:'Jakarta Timur', status:'Surat Terbit', docs:'5/5', sla:'Selesai', output:'Siap unduh'},
-  {ticket:'SKT-2026-0701', date:'01 Jul 2026', jenis:'Pembaruan Data', org:'Forum Pemuda Betawi Bersatu', wilayah:'Jakarta Timur', status:'Menunggu Cek', docs:'3/5', sla:'3 hari', output:'Belum terbit'},
-  {ticket:'SKT-2026-0628', date:'28 Jun 2026', jenis:'Perpanjangan / Pembaruan', org:'Paguyuban Seni Budaya Nusantara', wilayah:'Jakarta Pusat', status:'Disetujui', docs:'5/5', sla:'Selesai', output:'Draft surat'},
-  {ticket:'SKT-2026-0622', date:'22 Jun 2026', jenis:'Tanda Lapor Baru', org:'Lembaga Dakwah dan Sosial Al-Ikhlas', wilayah:'Jakarta Barat', status:'Ditolak', docs:'2/5', sla:'Selesai', output:'Tidak terbit'}
+window.filterAdminReports = function () {
+  const status = $('#adminStatusFilter')?.value || '';
+  const field = $('#adminFieldFilter')?.value || '';
+  $$('#adminReportBody tr').forEach((row, index) => {
+    const report = activityReports[index];
+    row.hidden = !((!status || report.status === status) && (!field || report.field === field));
+  });
+};
+
+function adminReportDetail() {
+  const report = activityReports.find(item => item.id === selectedActivityId) || activityReports[0];
+  const content = `<div class="preview-detail">
+    <section class="panel">
+      <div class="panel-head"><div><h2>Verifikasi Laporan Keaktifan</h2><p class="muted">${report.id}</p></div>${statusBadge(report.status)}</div>
+      <div class="detail-grid">
+        <div><small>Nama ORMAS</small><b>${report.org}</b></div>
+        <div><small>Nama Kegiatan</small><b>${report.activity}</b></div>
+        <div><small>Tanggal Kegiatan</small><b>${new Date(report.date).toLocaleDateString('id-ID')}</b></div>
+        <div><small>Bidang</small><b>${report.field}</b></div>
+      </div>
+      <h3>Keterangan</h3><p>${report.description}</p>
+      <h3>Foto Kegiatan</h3>
+      <div class="photo-preview-grid">${Array.from({ length: report.photos }, (_, index) => `<div class="photo-placeholder">📷<span>Foto ${index + 1}</span></div>`).join('')}</div>
+      ${report.rejectionReason ? `<div class="notice"><b>Alasan Penolakan:</b> ${report.rejectionReason}</div>` : ''}
+    </section>
+    <aside class="panel verification-panel">
+      <h3>Keputusan Verifikasi</h3>
+      <p class="muted">Pilih Setuju atau Tolak. Penolakan wajib disertai alasan.</p>
+      <label>Alasan Penolakan</label>
+      <textarea id="rejectionReason" class="note-area" placeholder="Diisi jika laporan ditolak">${report.rejectionReason || ''}</textarea>
+      <button class="btn success full-button" onclick="approveReport('${report.id}')">Setuju</button>
+      <button class="btn danger full-button" onclick="rejectReport('${report.id}')">Tolak</button>
+      <button class="outline-btn full-button" onclick="go('#admin-reports')">Kembali ke Daftar</button>
+    </aside>
+  </div>`;
+  return adminShell(content, 'reports');
+}
+
+window.approveReport = function (id) {
+  const report = activityReports.find(item => item.id === id);
+  if (!report) return;
+  report.status = 'Disetujui';
+  report.rejectionReason = '';
+  toast('Laporan disetujui dan status keaktifan diperbarui.');
+  render();
+};
+
+window.rejectReport = function (id) {
+  const reason = $('#rejectionReason')?.value.trim();
+  if (!reason) {
+    toast('Alasan penolakan wajib diisi.');
+    return;
+  }
+  const report = activityReports.find(item => item.id === id);
+  if (!report) return;
+  report.status = 'Ditolak';
+  report.rejectionReason = reason;
+  toast('Laporan ditolak dan alasan tersimpan.');
+  render();
+};
+
+function render() {
+  const route = location.hash || '#home';
+  if (route === '#home') app.innerHTML = homePage();
+  else if (route === '#ormas-portal') app.innerHTML = portalPage();
+  else if (route === '#public-dashboard') app.innerHTML = publicDashboard();
+  else if (route === '#registration') app.innerHTML = registrationPage();
+  else if (route === '#ormas-login') app.innerHTML = loginPage();
+  else if (route === '#activity-report') app.innerHTML = activityReportPage();
+  else if (route === '#admin-dashboard') app.innerHTML = adminDashboard();
+  else if (route === '#admin-reports') app.innerHTML = adminReportsPage();
+  else if (route === '#admin-report-detail') app.innerHTML = adminReportDetail();
+  else app.innerHTML = homePage();
+  window.scrollTo(0, 0);
+}
+
+// Safe placeholders so a direct refresh on #public-dashboard does not fail before the dashboard patch is initialized.
+var selectedPublicYearV2 = typeof selectedPublicYearV2 === 'undefined' ? '2026' : selectedPublicYearV2;
+var publicDirectoryStateV2 = typeof publicDirectoryStateV2 === 'undefined' ? { search: '', region: '', field: '', status: '', perPage: 5, page: 1 } : publicDirectoryStateV2;
+var monthlyReportsByYearV2 = typeof monthlyReportsByYearV2 === 'undefined' ? { '2026': [] } : monthlyReportsByYearV2;
+var publicDirectoryV2 = typeof publicDirectoryV2 === 'undefined' ? [] : publicDirectoryV2;
+
+window.addEventListener('hashchange', () => render());
+render();
+
+/* === PATCH JULI 2026: alur Home -> Pendaftaran ORMAS -> Portal, serta fokus Dashboard Publik sesuai dokumen kebutuhan === */
+var selectedPublicYearV2 = '2026';
+var publicDirectoryStateV2 = { search: '', region: '', field: '', status: '', perPage: 5, page: 1 };
+
+var monthlyReportsByYearV2 = {
+  '2024': [
+    { month: 'Jan', total: 48 }, { month: 'Feb', total: 53 }, { month: 'Mar', total: 61 },
+    { month: 'Apr', total: 57 }, { month: 'Mei', total: 69 }, { month: 'Jun', total: 74 },
+    { month: 'Jul', total: 81 }, { month: 'Agu', total: 78 }, { month: 'Sep', total: 86 },
+    { month: 'Okt', total: 91 }, { month: 'Nov', total: 88 }, { month: 'Des', total: 97 }
+  ],
+  '2025': [
+    { month: 'Jan', total: 63 }, { month: 'Feb', total: 71 }, { month: 'Mar', total: 77 },
+    { month: 'Apr', total: 84 }, { month: 'Mei', total: 92 }, { month: 'Jun', total: 101 },
+    { month: 'Jul', total: 108 }, { month: 'Agu', total: 114 }, { month: 'Sep', total: 119 },
+    { month: 'Okt', total: 126 }, { month: 'Nov', total: 133 }, { month: 'Des', total: 141 }
+  ],
+  '2026': [
+    { month: 'Jan', total: 82 }, { month: 'Feb', total: 96 }, { month: 'Mar', total: 118 },
+    { month: 'Apr', total: 134 }, { month: 'Mei', total: 151 }, { month: 'Jun', total: 169 },
+    { month: 'Jul', total: 184 }
+  ]
+};
+
+var publicDirectoryV2 = [
+  { name:'Jurnal Demokrasi', chair:'Hendra Irawan', region:'Jakarta Pusat', address:'Kelurahan Gambir, Kecamatan Gambir', field:'Pendidikan Politik', status:'Aktif' },
+  { name:'Gerakan Anti Narkoba Nasional', chair:'Rizky Pratama', region:'Jakarta Timur', address:'Kelurahan Ceger, Kecamatan Cipayung', field:'Sosial', status:'Aktif' },
+  { name:'Yayasan Peduli Pendidikan Anak Bangsa', chair:'Nur Aisyah', region:'Jakarta Selatan', address:'Kelurahan Pejaten Barat, Kecamatan Pasar Minggu', field:'Pendidikan', status:'Aktif' },
+  { name:'Komunitas Lingkungan Hijau Jakarta', chair:'Bima Wardana', region:'Jakarta Utara', address:'Kelurahan Tanjung Priok, Kecamatan Tanjung Priok', field:'Lingkungan', status:'Tidak Aktif' },
+  { name:'Forum Pemuda Betawi Bersatu', chair:'Muhammad Fikri', region:'Jakarta Barat', address:'Kelurahan Cengkareng Barat, Kecamatan Cengkareng', field:'Kepemudaan', status:'Aktif' },
+  { name:'Majelis Edukasi Sosial Nusantara', chair:'Siti Rahmawati', region:'Jakarta Pusat', address:'Kelurahan Kebon Kosong, Kecamatan Kemayoran', field:'Sosial', status:'Aktif' },
+  { name:'Lembaga Dakwah dan Sosial Al-Ikhlas', chair:'Ahmad Fauzan', region:'Jakarta Barat', address:'Kelurahan Palmerah, Kecamatan Palmerah', field:'Keagamaan', status:'Aktif' },
+  { name:'Paguyuban Seni Budaya Nusantara', chair:'Dewi Larasati', region:'Jakarta Pusat', address:'Kelurahan Cikini, Kecamatan Menteng', field:'Kebudayaan', status:'Aktif' },
+  { name:'Perkumpulan Kesehatan Masyarakat Mandiri', chair:'dr. Rahmat Hidayat', region:'Jakarta Selatan', address:'Kelurahan Tebet Barat, Kecamatan Tebet', field:'Kesehatan', status:'Aktif' },
+  { name:'Forum Peduli Kemanusiaan Jakarta', chair:'Maya Kartika', region:'Jakarta Timur', address:'Kelurahan Jatinegara, Kecamatan Cakung', field:'Kemanusiaan', status:'Aktif' },
+  { name:'Ikatan Profesi Kreatif Jakarta', chair:'Rendra Saputra', region:'Jakarta Selatan', address:'Kelurahan Melawai, Kecamatan Kebayoran Baru', field:'Profesi', status:'Aktif' },
+  { name:'Komunitas Pemuda Kepulauan Seribu', chair:'Arif Maulana', region:'Kepulauan Seribu', address:'Kelurahan Pulau Panggang, Kecamatan Kepulauan Seribu Utara', field:'Kepemudaan', status:'Aktif' },
+  { name:'Yayasan Sahabat Anak Jakarta', chair:'Fitri Handayani', region:'Jakarta Utara', address:'Kelurahan Pademangan Barat, Kecamatan Pademangan', field:'Sosial', status:'Aktif' },
+  { name:'Forum Pendidikan Warga Jakarta', chair:'M. Ilham Akbar', region:'Jakarta Timur', address:'Kelurahan Duren Sawit, Kecamatan Duren Sawit', field:'Pendidikan', status:'Aktif' },
+  { name:'Perkumpulan Budaya Betawi Lestari', chair:'Rini Kurniasih', region:'Jakarta Barat', address:'Kelurahan Srengseng, Kecamatan Kembangan', field:'Kebudayaan', status:'Aktif' },
+  { name:'Komunitas Peduli Sungai Ciliwung', chair:'Dani Ramadhan', region:'Jakarta Selatan', address:'Kelurahan Rawajati, Kecamatan Pancoran', field:'Lingkungan', status:'Aktif' },
+  { name:'Majelis Kerukunan Umat Jakarta', chair:'H. Abdul Karim', region:'Jakarta Pusat', address:'Kelurahan Kramat, Kecamatan Senen', field:'Keagamaan', status:'Aktif' },
+  { name:'Yayasan Kemanusiaan Harapan Bersama', chair:'Elisa Natalia', region:'Jakarta Utara', address:'Kelurahan Koja, Kecamatan Koja', field:'Kemanusiaan', status:'Tidak Aktif' },
+  { name:'Asosiasi Tenaga Profesional Jakarta', chair:'Dimas Prakoso', region:'Jakarta Pusat', address:'Kelurahan Bendungan Hilir, Kecamatan Tanah Abang', field:'Profesi', status:'Aktif' },
+  { name:'Forum Remaja Sehat Jakarta', chair:'Nadia Putri', region:'Jakarta Timur', address:'Kelurahan Kramat Jati, Kecamatan Kramat Jati', field:'Kesehatan', status:'Aktif' },
+  { name:'Komunitas Literasi Pesisir', chair:'Rudi Hartono', region:'Jakarta Utara', address:'Kelurahan Kalibaru, Kecamatan Cilincing', field:'Pendidikan', status:'Aktif' },
+  { name:'Perkumpulan Sosial Warga Kebon Jeruk', chair:'Yuni Astuti', region:'Jakarta Barat', address:'Kelurahan Kebon Jeruk, Kecamatan Kebon Jeruk', field:'Sosial', status:'Aktif' },
+  { name:'Forum Pemuda Kreatif Menteng', chair:'Aditya Nugraha', region:'Jakarta Pusat', address:'Kelurahan Pegangsaan, Kecamatan Menteng', field:'Kepemudaan', status:'Tidak Aktif' },
+  { name:'Yayasan Pelestari Budaya Kepulauan', chair:'Nurhayati', region:'Kepulauan Seribu', address:'Kelurahan Pulau Tidung, Kecamatan Kepulauan Seribu Selatan', field:'Kebudayaan', status:'Aktif' },
+  { name:'Gerakan Masyarakat Peduli Kesehatan', chair:'Andri Setiawan', region:'Jakarta Timur', address:'Kelurahan Cipinang Melayu, Kecamatan Makasar', field:'Kesehatan', status:'Aktif' }
 ];
 
-const activityReports = [
-  {ticket:'AKT-2026-0710', date:'10 Jul 2026', periode:'Triwulan II 2026', org:'Komunitas Lingkungan Hijau Jakarta', kegiatan:'Aksi Bersih Kali dan Edukasi Lingkungan', bidang:'Lingkungan', wilayah:'Jakarta Utara', participants:'180', evidence:'Foto, Laporan, Daftar Hadir', status:'Menunggu Review', follow:'Cek bukti foto dan daftar hadir', sla:'1 hari'},
-  {ticket:'AKT-2026-0707', date:'07 Jul 2026', periode:'Juni 2026', org:'Yayasan Peduli Pendidikan Anak Bangsa', kegiatan:'Kelas Literasi Anak Rusun', bidang:'Pendidikan', wilayah:'Jakarta Selatan', participants:'95', evidence:'Foto, Laporan, Rundown', status:'Disetujui', follow:'Selesai', sla:'Selesai'},
-  {ticket:'AKT-2026-0704', date:'04 Jul 2026', periode:'Semester I 2026', org:'Forum Pemuda Betawi Bersatu', kegiatan:'Pelatihan Kepemudaan dan Wawasan Kebangsaan', bidang:'Kepemudaan', wilayah:'Jakarta Timur', participants:'220', evidence:'Foto, Laporan', status:'Butuh Bukti Tambahan', follow:'Minta daftar hadir peserta', sla:'2 hari'},
-  {ticket:'AKT-2026-0626', date:'26 Jun 2026', periode:'Juni 2026', org:'Lembaga Dakwah dan Sosial Al-Ikhlas', kegiatan:'Bakti Sosial dan Santunan Warga', bidang:'Sosial', wilayah:'Jakarta Barat', participants:'310', evidence:'Foto, Laporan, Daftar Hadir', status:'Disetujui', follow:'Selesai', sla:'Selesai'},
-  {ticket:'AKT-2026-0618', date:'18 Jun 2026', periode:'Triwulan II 2026', org:'Paguyuban Seni Budaya Nusantara', kegiatan:'Pentas Budaya dan Workshop Tari', bidang:'Kebudayaan', wilayah:'Jakarta Pusat', participants:'140', evidence:'Foto, Materi Publikasi', status:'Menunggu Review', follow:'Cek laporan kegiatan', sla:'4 hari'}
-];
-
-function sktRows(limit=8){
-  return sktRequests.slice(0,limit).map((r,i)=>`<tr><td>${i+1}</td><td><a class="click-link" onclick="go('#admin-detail')">${r.ticket}</a></td><td>${r.date}</td><td><b>${r.org}</b><br><small>${r.jenis}</small></td><td>${r.wilayah}</td><td>${statusBadge(r.status)}</td><td>${r.docs}</td><td>${r.output}</td><td>${r.sla}</td></tr>`).join('');
+function publicHeader(){
+  return `<header class="topbar"><div class="container topbar-inner">${logoHtml()}<nav class="nav"><a>PROFIL <span class="chev">⌄</span></a><a>BIDANG <span class="chev">⌄</span></a><a>PPID <span class="chev">⌄</span></a><a>MEDIA <span class="chev">⌄</span></a><a>FAQ <span class="chev">⌄</span></a><a>DWP</a><a>Kanal Pengaduan (CRM) ↗</a></nav><div class="header-actions"><div class="search">⌕ <span>Cari Berita</span></div><button class="icon-btn" title="Tema">☾</button><button class="profile-btn" title="Akses Pegawai" onclick="go('#admin-dashboard')">♡</button></div></div></header>`;
 }
 
-function activityRows(limit=8){
-  return activityReports.slice(0,limit).map((r,i)=>`<tr><td>${i+1}</td><td><a class="click-link" onclick="go('#admin-activity-detail')">${r.ticket}</a></td><td>${r.periode}<br><small>${r.date}</small></td><td><b>${r.org}</b><br><small>${r.kegiatan}</small></td><td>${r.bidang}</td><td>${r.wilayah}</td><td>${r.participants}</td><td><small>${r.evidence}</small></td><td>${statusBadge(r.status)}</td><td><small>${r.follow}</small></td></tr>`).join('');
+function openOrmasModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-backdrop';
+  overlay.innerHTML = `<div class="modal"><div class="modal-top"><div><h2>Pendaftaran Ormas</h2><p>Layanan Pendaftaran Ormas digunakan untuk melihat Dashboard Publik, mengisi Form Pendaftaran ORMAS, dan mengakses Pelaporan Keaktifan setelah login.</p></div><button class="btn ghost" aria-label="Tutup" onclick="this.closest('.modal-backdrop').remove()">×</button></div><div class="modal-actions"><button class="btn" onclick="this.closest('.modal-backdrop').remove()">Tutup</button><button class="btn primary" onclick="this.closest('.modal-backdrop').remove();go('#ormas-portal')">Lanjutkan</button></div></div>`;
+  document.body.appendChild(overlay);
+}
+window.openOrmasModal = openOrmasModal;
+
+function homePage(){
+  return `${publicHeader()}<main><section class="container hero"><div class="hero-frame"><div class="hero-bg-grid"></div><div class="hero-badge"><span>▣</span><span>BAKESBANGPOL</span></div><div class="hero-title-center">Layanan Organisasi Kemasyarakatan</div><h1>Pendaftaran Ormas</h1><div class="slider-dots"><span></span><span class="active"></span><span></span></div></div></section><section class="container"><div class="section-head"><div class="section-title"><div class="title-logo"></div><div><h2>Layanan <span>Kami</span></h2><div class="under"></div></div></div><a class="link-blue">Lihat Semua Layanan ›</a></div><div class="cards-3"><article class="service-card" onclick="toast('Prototype Pelaporan FKDM tidak termasuk ruang lingkup modul ORMAS ini')"><div class="mini-logo"></div><h3>Pelaporan FKDM</h3><p>Fitur Pelaporan FKDM digunakan untuk menginput laporan bagi anggota FKDM di lingkungan Provinsi DKI Jakarta.</p></article><article class="service-card" onclick="openOrmasModal()"><div class="mini-logo"></div><h3>Pendaftaran Ormas</h3><p>Layanan untuk membuka Dashboard Publik ORMAS, Form Pendaftaran, dan Pelaporan Keaktifan ORMAS.</p></article><article class="service-card" onclick="toast('Prototype Paskibraka tidak termasuk ruang lingkup modul ORMAS ini')"><div class="mini-logo"></div><h3>Paskibraka</h3><p>Aplikasi pendaftaran Paskibraka untuk mempermudah proses pendaftaran calon anggota Paskibraka.</p></article></div></section></main>${footer()}`;
 }
 
-function mixedRequestRows(limit=10){
-  const mixed = [
-    ...sktRequests.map(r=>({...r, service:'Pengajuan Tanda Lapor / SKT', link:'#admin-detail'})),
-    ...activityReports.map(r=>({...r, service:'Pelaporan Keaktifan ORMAS', link:'#admin-activity-detail', docs:r.evidence, output:r.follow}))
-  ];
-  return mixed.slice(0,limit).map((r,i)=>`<tr><td>${i+1}</td><td><a class="click-link" onclick="go('${r.link}')">${r.ticket}</a></td><td>${r.date}</td><td><b>${r.service}</b><br><small>${r.org}</small></td><td>${r.wilayah}</td><td>${statusBadge(r.status)}</td><td><small>${r.docs}</small></td><td>${r.sla}</td></tr>`).join('');
+function portalPage(){
+  return `${publicHeader()}<main class="page"><div class="container"><div class="crumb">Beranda / Layanan / Pendaftaran Ormas</div><section class="portal-hero"><div><span class="pill cyan">Menu Pendaftaran ORMAS</span><h1>Pendaftaran & Pelaporan ORMAS</h1><p>Pilih layanan yang dibutuhkan setelah membuka menu Pendaftaran Ormas dari halaman utama.</p></div><button class="btn light" onclick="go('#home')">Kembali ke Beranda</button></section><div class="quick-grid portal-modules-v2"><article class="quick-card" onclick="go('#public-dashboard')"><span class="pill blue">Publik</span><h3>Dashboard Publik ORMAS</h3><p>Menampilkan tren laporan keberadaan, peta sebaran, direktori ORMAS, dan ringkasan per wilayah.</p><button class="btn blue">Lihat Dashboard Publik</button></article><article class="quick-card" onclick="go('#registration')"><span class="pill orange">Pendaftaran</span><h3>Form Pendaftaran ORMAS</h3><p>Mengisi data pendaftaran ORMAS dengan Bidang Wilayah berbentuk dropdown dan Periode ORMAS.</p><button class="btn">Mulai Pendaftaran</button></article><article class="quick-card" onclick="go('#ormas-login')"><span class="pill green">Keaktifan</span><h3>Pelaporan Keaktifan ORMAS</h3><p>ORMAS login untuk melaporkan satu kegiatan per laporan dan mengunggah maksimal tiga foto.</p><button class="btn">Login & Lapor Kegiatan</button></article></div></div></main>${footer()}`;
 }
 
-function sktFormPage(){
-  return `${header()}<main class="page"><div class="container"><div class="crumb">Beranda / Pendaftaran Ormas / Tanda Lapor / SKT</div><div class="app-form-layout skt-layout"><aside class="stepper-card"><h3>Pengajuan Tanda Lapor / SKT ORMAS</h3><p>Untuk ORMAS yang sudah memiliki akun terverifikasi, data dari pendaftaran tidak perlu diisi ulang. Pengajuan ini hanya meminta surat permohonan, perubahan bila ada, dan dokumen pendukung yang relevan.</p><div class="step-list"><span>1. Profil ORMAS Terverifikasi</span><span>2. Jenis Pengajuan</span><span>3. Perubahan Data Jika Ada</span><span>4. Dokumen Khusus Pengajuan</span><span>5. Review & Submit</span><span>6. Surat Dapat Diunduh Setelah Disetujui</span></div><div class="info-box"><b>Catatan</b><br>Data organisasi, alamat, pengurus, legalitas, dan masa bakti diambil dari profil ORMAS. Jangan tanya ulang data yang sudah ada di pendaftaran kecuali ada perubahan.</div><button class="btn" onclick="go('#ormas-portal')">Kembali ke Portal</button></aside><section class="form-card">${sktFormContent()}</section></div></div></main>${footer()}`;
+function selectedMonthlyReportsV2(){ return monthlyReportsByYearV2[selectedPublicYearV2] || monthlyReportsByYearV2['2026']; }
+function totalReportsV2(){ return selectedMonthlyReportsV2().reduce((sum,item)=>sum+item.total,0); }
+
+function interactiveMapV2(){
+  return `<div class="jakarta-map interactive-map"><button class="tag p1 map-tag" onclick="selectPublicRegionV2('Jakarta Barat')">Jakarta Barat<br><b>1.450</b></button><button class="tag p2 map-tag" onclick="selectPublicRegionV2('Jakarta Pusat')">Jakarta Pusat<br><b>1.205</b></button><button class="tag p3 map-tag" onclick="selectPublicRegionV2('Jakarta Utara')">Jakarta Utara<br><b>1.340</b></button><button class="tag p4 map-tag" onclick="selectPublicRegionV2('Jakarta Selatan')">Jakarta Selatan<br><b>1.210</b></button><button class="tag p5 map-tag" onclick="selectPublicRegionV2('Jakarta Timur')">Jakarta Timur<br><b>1.460</b></button><button class="tag p6 map-tag" onclick="selectPublicRegionV2('Kepulauan Seribu')">Kep. Seribu<br><b>177</b></button></div>`;
 }
 
-function sktFormContent(){
-  return `<div>${verifiedAccountNotice()}${accountSnapshot('1. Profil ORMAS Terverifikasi')}${section('2. Jenis Pengajuan','Pilih tujuan pengajuan agar verifikator memproses dokumen yang tepat.')}<div class="form-grid">${selectField('Jenis Pengajuan',['Tanda Lapor Baru','Perpanjangan / Pembaruan Tanda Lapor','Perubahan Data ORMAS','Cetak Ulang / Unduh Ulang Surat'],'col2')}${field('Tanggal Pengajuan','col2','date')}${field('Nomor Surat Permohonan','col2')}${field('Tanggal Surat Permohonan','col2','date')}<div class="field col4"><label>Perihal / Keterangan Pengajuan</label><textarea placeholder="Contoh: Pengajuan tanda lapor baru / pembaruan karena perubahan pengurus"></textarea></div></div>${section('3. Perubahan Data Jika Ada','Isi bagian ini hanya bila ada perubahan dari profil ORMAS yang sudah tersimpan. Jika tidak ada perubahan, bagian ini boleh dikosongkan.')}<div class="change-box"><div class="form-grid">${selectField('Jenis Perubahan',['Tidak Ada Perubahan','Perubahan Alamat/Kontak','Perubahan Pengurus','Perubahan Masa Bakti','Perubahan Legalitas','Perubahan Cabang/Unit/Sayap'],'col2')}<div class="field col2"><label>Ringkasan Perubahan</label><textarea placeholder="Tuliskan data yang berubah saja"></textarea></div>${file('Dokumen Pendukung Perubahan jika ada','col2')}${file('SK Kepengurusan Terbaru jika ada perubahan pengurus/masa bakti','col2')}</div></div>${section('4. Dokumen Khusus Pengajuan','Dokumen ini berkaitan dengan permohonan tanda lapor/SKT. Dokumen lama yang masih valid cukup memakai data dari profil.')}<div class="form-grid">${file('Surat Permohonan Tanda Lapor / SKT yang ditandatangani Ketua dan Sekretaris')}${file('Surat Pernyataan Bermaterai 10.000')}${file('SK Kepengurusan Terbaru jika ada perubahan')}${file('SK Kemenkumham / AHU jika berbadan hukum atau ada perubahan legalitas')}${file('Dokumen Pendukung Perubahan Alamat/Kontak jika ada')}${file('Dokumen Tambahan yang Diminta Verifikator jika ada')}</div>${section('5. Review dan Submit','Konfirmasi bahwa profil dan dokumen yang digunakan benar.')}<div class="form-grid">${checkList('Pernyataan ORMAS',['Profil ORMAS yang ditampilkan sudah benar atau perubahan sudah dijelaskan','Dokumen yang diunggah benar dan dapat dipertanggungjawabkan','Tidak terjadi konflik kepengurusan','Bersedia menyampaikan laporan perkembangan dan kegiatan organisasi setiap akhir tahun','Tidak akan menyalahgunakan surat/tanda lapor yang diterbitkan'])}</div><div class="review-card"><label class="check-item"><input type="checkbox" checked> Saya menyatakan bahwa profil ORMAS, perubahan data, dan dokumen pengajuan dapat dipertanggungjawabkan.</label><div class="field col4"><label>Catatan Tambahan dari ORMAS jika ada</label><textarea></textarea></div></div><div class="form-action-line"><button class="btn" onclick="go('#ormas-portal')">Kembali</button><button class="btn blue" onclick="toast('Mockup: Pengajuan tanda lapor/SKT berhasil dikirim')">Kirim Pengajuan</button></div>${generatedLetterCard()}</div>`;
+function publicDashboard(){
+  return `${publicHeader()}<main class="page public-only"><div class="container"><div class="crumb">Beranda / Pendaftaran Ormas / Dashboard Publik</div><div class="public-top"><section class="public-hero"><span class="pill cyan">Dapat Diakses Tanpa Login</span><h1>Dashboard Publik ORMAS</h1><p>Informasi publik mengenai keberadaan, persebaran, direktori, dan status keaktifan ORMAS di Provinsi DKI Jakarta.</p></section><button class="btn" onclick="go('#ormas-portal')">Kembali ke Menu ORMAS</button></div><div class="public-focus-kpis">${kpi('Total Pelaporan '+selectedPublicYearV2, totalReportsV2().toLocaleString('id-ID'), 'Laporan keberadaan ORMAS berbadan hukum', 'blue', '▥')}${kpi('Total ORMAS Terdata','6.842','Rekap agregat se-DKI Jakarta','green','👥')}${kpi('Wilayah Administrasi','6','Kota/Kabupaten Administrasi','yellow','⌖')}${kpi('Data Terakhir','Juli 2026','Diperbarui secara berkala','blue','↻')}</div><div class="public-feature-grid"><article class="panel trend-feature"><div class="panel-head"><div><h3>A. Grafik Tren Laporan Keberadaan ORMAS</h3><p class="muted">Jumlah ORMAS berbadan hukum yang melaporkan keberadaannya setiap bulan.</p></div><label class="inline-filter">Filter Tahun<select onchange="setPublicYearV2(this.value)"><option ${selectedPublicYearV2==='2024'?'selected':''}>2024</option><option ${selectedPublicYearV2==='2025'?'selected':''}>2025</option><option ${selectedPublicYearV2==='2026'?'selected':''}>2026</option></select></label></div><div class="trend-total"><small>Total Pelaporan Tahun ${selectedPublicYearV2}</small><strong>${totalReportsV2().toLocaleString('id-ID')}</strong></div>${verticalBars(selectedMonthlyReportsV2())}</article><article class="panel map-feature"><h3>B. Sebaran ORMAS</h3><p class="muted">Klik wilayah pada peta untuk melihat jumlah ORMAS dan menyaring direktori.</p>${interactiveMapV2()}<div id="regionDetailV2" class="region-detail-v2"><b>Seluruh DKI Jakarta</b><span>Total 6.842 ORMAS pada 6 wilayah administrasi.</span></div></article><article class="panel region-summary-feature"><h3>D. Ringkasan ORMAS per Wilayah</h3><p class="muted">Jumlah ORMAS berdasarkan wilayah administrasi.</p>${horizontalBars(regionData)}<div class="table-scroll"><table class="compact-region-table"><thead><tr><th>Wilayah</th><th>Jumlah ORMAS</th></tr></thead><tbody>${regionData.map(item=>`<tr><td>${item.name}</td><td><b>${item.total.toLocaleString('id-ID')}</b></td></tr>`).join('')}</tbody></table></div></article></div><article class="panel table-panel public-directory-panel"><div class="panel-head"><div><h3>C. Direktori ORMAS</h3><p class="muted">Daftar data ORMAS yang aman ditampilkan kepada masyarakat.</p></div><button class="outline-btn" onclick="resetPublicDirectoryV2()">Reset Pencarian</button></div><div class="directory-toolbar directory-toolbar-v2"><label class="directory-search-field">Cari ORMAS<input id="publicSearchV2" type="search" placeholder="Nama ORMAS, ketua, alamat, atau bidang..." oninput="updatePublicDirectoryFilterV2('search',this.value)"></label><label>Wilayah<select id="publicRegionV2" onchange="updatePublicDirectoryFilterV2('region',this.value)"><option value="">Semua Wilayah</option>${regionData.map(item=>`<option value="${item.name}">${item.name}</option>`).join('')}</select></label><label>Bidang<select id="publicFieldV2" onchange="updatePublicDirectoryFilterV2('field',this.value)"><option value="">Semua Bidang</option>${[...new Set(publicDirectoryV2.map(item=>item.field))].sort().map(item=>`<option value="${item}">${item}</option>`).join('')}</select></label><label>Status Keaktifan<select id="publicStatusV2" onchange="updatePublicDirectoryFilterV2('status',this.value)"><option value="">Semua Status</option><option>Aktif</option><option>Tidak Aktif</option></select></label><label>Baris per halaman<select id="publicPerPageV2" onchange="updatePublicDirectoryPageSizeV2(this.value)"><option value="5">5</option><option value="10">10</option><option value="25">25</option></select></label></div><div class="table-scroll"><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Nama Ketua</th><th>Wilayah</th><th>Alamat</th><th>Bidang</th><th>Status Keaktifan</th></tr></thead><tbody id="publicDirectoryBodyV2"></tbody></table></div><div class="directory-pagination"><span id="publicDirectoryInfoV2"></span><div id="publicDirectoryPagesV2" class="directory-pages"></div></div></article></div></main>${footer()}`;
 }
 
-function adminRequests(){
-  const content=`<div class="panel"><div class="panel-head"><h2>Daftar Permintaan Layanan</h2><div><button class="btn blue">Pencarian Lanjutan</button><button class="btn">🔄</button></div></div><div class="search-row"><input placeholder="Masukkan no. tiket / nama ormas"><select><option>Semua Status</option><option>Diajukan</option><option>Koreksi</option><option>Disetujui</option></select><select><option>Semua Jenis</option><option>Tanda Lapor / SKT</option><option>Pelaporan Keaktifan</option><option>Pendaftaran Ormas</option></select></div><table><thead><tr><th>No.</th><th>No. Tiket</th><th>Tgl. Pengajuan</th><th>Permintaan Layanan</th><th>Wilayah</th><th>Status</th><th>Dokumen/Bukti</th><th>SLA</th></tr></thead><tbody>${mixedRequestRows(10)}</tbody></table></div>`;
-  return adminShell(content,'requests');
+function filteredPublicDirectoryV2(){
+  const s = publicDirectoryStateV2.search.trim().toLowerCase();
+  return publicDirectoryV2.filter(item => {
+    const haystack = [item.name,item.chair,item.region,item.address,item.field,item.status].join(' ').toLowerCase();
+    return (!s || haystack.includes(s)) && (!publicDirectoryStateV2.region || item.region===publicDirectoryStateV2.region) && (!publicDirectoryStateV2.field || item.field===publicDirectoryStateV2.field) && (!publicDirectoryStateV2.status || item.status===publicDirectoryStateV2.status);
+  });
 }
 
-function adminSktMonitor(){
-  const content=`<div class="admin-intro"><div><h2>Monitoring Pengajuan Tanda Lapor / SKT ORMAS</h2><p>Proses ini berbeda dari pelaporan keaktifan. Pegawai memeriksa surat permohonan, perubahan data, dokumen pendukung, lalu menerbitkan surat/tanda lapor yang dapat diunduh oleh ORMAS.</p></div><button class="btn blue" onclick="go('#admin-detail')">Buka Contoh Detail SKT</button></div><div class="kpi-grid">${kpi('Pengajuan Tanda Lapor/SKT','312','Masuk tahun 2026','blue','📄')}${kpi('Menunggu Cek','57','Belum diperiksa','orange','⏳')}${kpi('Perlu Koreksi','74','Catatan dikirim','red','⚠️')}${kpi('Siap Terbit','29','Menunggu nomor surat','blue','📨')}${kpi('Surat Terbit','152','Dapat diunduh ORMAS','green','⬇')}${kpi('Ditolak','29','Tidak memenuhi syarat','red','✕')}</div><div class="chart-grid"><article class="panel wide"><h3>Tren Pengajuan Tanda Lapor / SKT</h3>${vBars([['Jan',28,45],['Feb',31,52],['Mar',42,68],['Apr',39,63],['Mei',54,85],['Jun',61,100],['Jul',57,93]])}</article><article class="panel"><h3>Status Pengajuan Tanda Lapor / SKT</h3>${donut([['Menunggu',57,'#fbbf24'],['Koreksi',74,'#fb923c'],['Surat Terbit',152,'#22c55e'],['Ditolak',29,'#ef4444']],'312')}</article><article class="panel"><h3>Jenis Pengajuan</h3>${barChart([['Tanda Lapor Baru',168,100],['Pembaruan',88,52],['Perubahan Data',56,33]])}</article><article class="panel"><h3>Dokumen yang Sering Diminta Ulang</h3>${barChart([['Surat Permohonan',74,100],['SK Pengurus Baru',62,84],['Surat Pernyataan',41,55],['AHU/SK Legalitas',35,47],['Dokumen Perubahan',29,39]])}</article></div><article class="panel table-panel"><div class="panel-head"><h3>Pengajuan Tanda Lapor / SKT yang Perlu Diproses</h3><button class="outline-btn">Export Excel</button></div><table><thead><tr><th>No.</th><th>No. Tiket</th><th>Tgl.</th><th>ORMAS</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>Output Surat</th><th>SLA</th></tr></thead><tbody>${sktRows(8)}</tbody></table></article><article class="panel table-panel"><div class="panel-head"><h3>Output Surat / Tanda Lapor per ORMAS</h3><button class="outline-btn">Template Surat</button></div><table><thead><tr><th>No.</th><th>ORMAS</th><th>Nomor Surat</th><th>Tanggal</th><th>Status Output</th><th>Aksi ORMAS</th></tr></thead><tbody>${suratOutputRows()}</tbody></table></article>`;
-  return adminShell(content,'skt-monitor');
+function renderPublicDirectoryV2(){
+  const body = document.querySelector('#publicDirectoryBodyV2');
+  const pages = document.querySelector('#publicDirectoryPagesV2');
+  const info = document.querySelector('#publicDirectoryInfoV2');
+  if(!body || !pages || !info) return;
+  const filtered = filteredPublicDirectoryV2();
+  const totalPages = Math.max(1, Math.ceil(filtered.length/publicDirectoryStateV2.perPage));
+  if(publicDirectoryStateV2.page>totalPages) publicDirectoryStateV2.page=totalPages;
+  const start = (publicDirectoryStateV2.page-1)*publicDirectoryStateV2.perPage;
+  const rows = filtered.slice(start,start+publicDirectoryStateV2.perPage);
+  body.innerHTML = rows.length ? rows.map((item,index)=>`<tr><td>${start+index+1}</td><td><b>${item.name}</b></td><td>${item.chair}</td><td>${item.region}</td><td>${item.address}</td><td>${item.field}</td><td>${statusBadge(item.status)}</td></tr>`).join('') : `<tr><td class="empty-directory" colspan="7">Data ORMAS tidak ditemukan.</td></tr>`;
+  const first = filtered.length ? start+1 : 0;
+  const last = Math.min(start+publicDirectoryStateV2.perPage,filtered.length);
+  info.textContent = `Menampilkan ${first}-${last} dari ${filtered.length} ORMAS`;
+  let html = `<button class="page-btn" ${publicDirectoryStateV2.page===1?'disabled':''} onclick="changePublicDirectoryPageV2(${publicDirectoryStateV2.page-1})">Sebelumnya</button>`;
+  for(let p=1;p<=totalPages;p++) html += `<button class="page-btn ${p===publicDirectoryStateV2.page?'active':''}" onclick="changePublicDirectoryPageV2(${p})">${p}</button>`;
+  html += `<button class="page-btn" ${publicDirectoryStateV2.page===totalPages?'disabled':''} onclick="changePublicDirectoryPageV2(${publicDirectoryStateV2.page+1})">Berikutnya</button>`;
+  pages.innerHTML = html;
 }
 
-function adminActivityMonitor(){
-  const content=`<div class="admin-intro"><div><h2>Monitoring Pelaporan Keaktifan ORMAS</h2><p>Proses ini khusus untuk laporan kegiatan berkala ORMAS. Tidak menghasilkan surat SKT/tanda lapor; pegawai memeriksa bukti kegiatan, capaian, peserta, dan konsistensi pelaporan.</p></div><button class="btn blue" onclick="go('#admin-activity-detail')">Buka Contoh Detail Laporan</button></div><div class="kpi-grid">${kpi('Laporan Keaktifan','1.284','Masuk tahun 2026','green','📌')}${kpi('Menunggu Review','93','Belum diperiksa','blue','⏳')}${kpi('Butuh Bukti Tambahan','126','Perlu pelengkap','orange','⚠️')}${kpi('Disetujui','1.065','Valid sebagai laporan kegiatan','green','✅')}${kpi('ORMAS Belum Lapor','842','Perlu pengingat','red','📣')}${kpi('Peserta/Penerima Manfaat','48.320','Tercatat dari laporan','blue','👥')}</div><div class="chart-grid"><article class="panel wide"><h3>Tren Laporan Keaktifan ORMAS</h3>${vBars([['Jan',112,46],['Feb',138,57],['Mar',166,68],['Apr',192,79],['Mei',218,90],['Jun',242,100],['Jul',216,89]])}</article><article class="panel"><h3>Status Laporan Kegiatan</h3>${donut([['Disetujui',1065,'#22c55e'],['Butuh Bukti',126,'#fb923c'],['Menunggu Review',93,'#60a5fa']],'1.284')}</article><article class="panel"><h3>Bidang Kegiatan yang Dilaporkan</h3>${barChart([['Sosial',332,100],['Pendidikan',286,86],['Keagamaan',244,73],['Lingkungan',192,58],['Kepemudaan',146,44],['Kebudayaan',84,25]])}</article><article class="panel"><h3>Bukti Kegiatan Terunggah</h3>${barChart([['Foto Kegiatan',1255,98],['Laporan Singkat',1198,93],['Daftar Hadir',842,66],['Undangan/Rundown',522,41],['Materi Publikasi',468,36]])}</article><article class="panel"><h3>Periode Pelaporan</h3>${barChart([['Bulanan',518,100],['Triwulan',386,75],['Semester',241,47],['Tahunan',139,27]])}</article><article class="panel"><h3>Wilayah Kegiatan Terbanyak</h3>${barChart([['Jakarta Timur',286,100],['Jakarta Selatan',244,85],['Jakarta Pusat',221,77],['Jakarta Utara',198,69],['Jakarta Barat',188,66]])}</article></div><article class="panel table-panel"><div class="panel-head"><h3>Laporan Keaktifan yang Perlu Ditindaklanjuti</h3><button class="outline-btn">Export Excel</button></div><table><thead><tr><th>No.</th><th>No. Laporan</th><th>Periode</th><th>ORMAS & Kegiatan</th><th>Bidang</th><th>Wilayah</th><th>Peserta</th><th>Bukti Kegiatan</th><th>Status</th><th>Tindak Lanjut</th></tr></thead><tbody>${activityRows(8)}</tbody></table></article>`;
-  return adminShell(content,'activity-monitor');
-}
+window.updatePublicDirectoryFilterV2 = function(key,value){ publicDirectoryStateV2[key]=value; publicDirectoryStateV2.page=1; renderPublicDirectoryV2(); };
+window.updatePublicDirectoryPageSizeV2 = function(value){ publicDirectoryStateV2.perPage=Number(value)||5; publicDirectoryStateV2.page=1; renderPublicDirectoryV2(); };
+window.changePublicDirectoryPageV2 = function(page){ const max=Math.max(1,Math.ceil(filteredPublicDirectoryV2().length/publicDirectoryStateV2.perPage)); publicDirectoryStateV2.page=Math.min(Math.max(1,page),max); renderPublicDirectoryV2(); };
+window.resetPublicDirectoryV2 = function(){ publicDirectoryStateV2={search:'',region:'',field:'',status:'',perPage:5,page:1}; ['publicSearchV2','publicRegionV2','publicFieldV2','publicStatusV2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';}); const per=document.getElementById('publicPerPageV2');if(per)per.value='5'; updateRegionDetailV2(''); renderPublicDirectoryV2(); };
+window.selectPublicRegionV2 = function(region){ publicDirectoryStateV2.region=region; publicDirectoryStateV2.page=1; const select=document.getElementById('publicRegionV2');if(select)select.value=region; updateRegionDetailV2(region); renderPublicDirectoryV2(); document.querySelector('.public-directory-panel')?.scrollIntoView({behavior:'smooth',block:'start'}); };
+window.setPublicYearV2 = function(year){ selectedPublicYearV2=year; render(); };
 
-function adminActivityDetail(){
-  const r = activityReports[0];
-  const content=`<div class="preview-detail"><div class="panel"><h2>Detail Pelaporan Keaktifan ORMAS</h2><p class="muted">Halaman ini khusus monitoring kegiatan ORMAS. Tidak terhubung dengan penerbitan SKT/tanda lapor.</p><div class="stats small"><div class="stat-card"><div class="label">No. Laporan</div><div class="value">${r.ticket}</div></div><div class="stat-card"><div class="label">Periode</div><div class="value">${r.periode}</div></div><div class="stat-card"><div class="label">Status</div><div class="value">Review</div></div></div>${accountSnapshot('Profil ORMAS Pelapor')}<h3>Informasi Kegiatan</h3><table><tbody><tr><th>Nama Kegiatan</th><td>${r.kegiatan}</td></tr><tr><th>Bidang</th><td>${r.bidang}</td></tr><tr><th>Lokasi Kegiatan</th><td>${r.wilayah}</td></tr><tr><th>Jumlah Peserta/Penerima Manfaat</th><td>${r.participants} orang</td></tr><tr><th>Ringkasan</th><td>Kegiatan edukasi dan aksi lapangan yang dilaporkan sebagai bukti keaktifan ORMAS pada periode berjalan.</td></tr></tbody></table><h3>Bukti Kegiatan</h3><table><thead><tr><th>Bukti</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${['Laporan Singkat Kegiatan','Foto Kegiatan','Daftar Hadir Peserta','Undangan / Rundown','Materi Publikasi'].map((d,i)=>`<tr><td>📎 ${d}</td><td>${i===2?'<span class="pill orange">Perlu Cek</span>':'<span class="pill green">Ada</span>'}</td><td><a class="click-link" onclick="toast('Mockup: membuka bukti kegiatan')">Lihat</a></td></tr>`).join('')}</tbody></table></div><aside><div class="panel"><h3>Status Review Laporan</h3><p><span class="pill blue">Menunggu Review</span></p><label>Catatan Pegawai</label><textarea class="note-area">Mohon pastikan daftar hadir sesuai jumlah peserta yang dilaporkan.</textarea><button class="btn" onclick="toast('Mockup: permintaan bukti tambahan dikirim')">Minta Bukti Tambahan</button> <button class="btn success" onclick="toast('Mockup: laporan keaktifan disetujui')">Setujui Laporan</button></div><div class="panel"><h3>Tindak Lanjut</h3><div class="timeline"><div class="item"><b>Diajukan</b><br><small>${r.date} oleh ORMAS</small></div><div class="item"><b>Review Bukti</b><br><small>Foto kegiatan dan laporan singkat tersedia</small></div><div class="item"><b>Output</b><br><small>Masuk rekap keaktifan ORMAS, bukan penerbitan SKT.</small></div></div></div></aside></div>`;
-  return adminShell(content,'activity-monitor');
-}
-
-function dashboardTable(){
-  return `<div class="grid-2"><article class="panel table-panel"><div class="panel-head"><h3>Pengajuan Tanda Lapor/SKT Perlu Diproses</h3><button class="outline-btn" onclick="go('#admin-skt-monitor')">Monitoring SKT →</button></div><table><thead><tr><th>No.</th><th>No. Tiket</th><th>ORMAS</th><th>Status</th><th>Output</th></tr></thead><tbody>${sktRequests.slice(0,5).map((r,i)=>`<tr><td>${i+1}</td><td><a class="click-link" onclick="go('#admin-detail')">${r.ticket}</a></td><td><b>${r.org}</b><br><small>${r.jenis}</small></td><td>${statusBadge(r.status)}</td><td>${r.output}</td></tr>`).join('')}</tbody></table></article><article class="panel table-panel"><div class="panel-head"><h3>Pelaporan Keaktifan Perlu Ditindaklanjuti</h3><button class="outline-btn" onclick="go('#admin-activity-monitor')">Monitoring Keaktifan →</button></div><table><thead><tr><th>No.</th><th>No. Laporan</th><th>ORMAS & Kegiatan</th><th>Status</th><th>Tindak Lanjut</th></tr></thead><tbody>${activityReports.slice(0,5).map((r,i)=>`<tr><td>${i+1}</td><td><a class="click-link" onclick="go('#admin-activity-detail')">${r.ticket}</a></td><td><b>${r.org}</b><br><small>${r.kegiatan}</small></td><td>${statusBadge(r.status)}</td><td><small>${r.follow}</small></td></tr>`).join('')}</tbody></table></article></div>`;
-}
-
-function fullDashboard(isAdmin=false){
-  if(!isAdmin) return publicDashboardContent();
-  return `<div class="dashboard-full">${filterRow()}<div class="kpi-grid">${kpi('Total ORMAS','6.842','Terdata di DKI Jakarta','blue','👥')}${kpi('Pengajuan Tanda Lapor/SKT','312','Proses surat/tanda lapor','blue','📄')}${kpi('Pelaporan Keaktifan','1.284','Laporan kegiatan masuk','green','📌')}${kpi('Menunggu Review','150','SKT dan kegiatan','orange','⏳')}${kpi('Perlu Koreksi/Bukti','200','Perlu tindak lanjut','red','⚠️')}${kpi('Output Selesai','1.217','Surat/laporan valid','green','✅')}</div><div class="chart-grid"><article class="panel wide"><h3>Tren Pengajuan SKT dan Laporan Keaktifan</h3>${vBars([['Jan',140,45],['Feb',169,54],['Mar',208,67],['Apr',231,74],['Mei',272,87],['Jun',303,100],['Jul',273,90]])}</article><article class="panel"><h3>Status Operasional Internal</h3>${donut([['Menunggu Review',150,'#fbbf24'],['Koreksi/Bukti Tambahan',200,'#fb923c'],['Selesai',1217,'#22c55e'],['Ditolak',29,'#ef4444']],'1.596')}</article><article class="panel"><h3>Layanan Masuk</h3>${barChart([['Pelaporan Keaktifan',1284,100],['Tanda Lapor/SKT',312,24],['Pendaftaran Ormas Baru',221,17],['Pemutakhiran Data',184,14]])}</article><article class="panel"><h3>Monitoring Tanda Lapor / SKT</h3>${barChart([['Surat Terbit',152,100],['Perlu Koreksi',74,49],['Menunggu Cek',57,38],['Siap Terbit',29,19]])}</article><article class="panel"><h3>Monitoring Keaktifan ORMAS</h3>${barChart([['Laporan Disetujui',1065,100],['Butuh Bukti',126,12],['Menunggu Review',93,9],['Belum Lapor',842,79]])}</article><article class="panel"><h3>Status Kepengurusan</h3>${donut([['Aktif',5106,'#22c55e'],['Akan Berakhir',894,'#fbbf24'],['Kadaluarsa',842,'#ef4444']],'6.842')}</article><article class="panel wide"><h3>Sebaran ORMAS per Wilayah</h3>${vBars(wilayah)}</article></div>${dashboardTable()}<article class="panel table-panel"><div class="panel-head"><h3>Output Surat / Tanda Lapor Terbaru</h3><button class="outline-btn" onclick="go('#admin-skt-monitor')">Monitoring SKT →</button></div><table><thead><tr><th>No.</th><th>ORMAS</th><th>Nomor Surat</th><th>Tanggal</th><th>Status Output</th><th>Aksi</th></tr></thead><tbody>${suratOutputRows()}</tbody></table></article></div>`;
+function updateRegionDetailV2(region){
+  const el=document.getElementById('regionDetailV2');
+  if(!el) return;
+  const item=regionData.find(row=>row.name===region);
+  el.innerHTML = item ? `<b>${item.name}</b><span>${item.total.toLocaleString('id-ID')} ORMAS terdata. Direktori telah disaring berdasarkan wilayah ini.</span>` : `<b>Seluruh DKI Jakarta</b><span>Total 6.842 ORMAS pada 6 wilayah administrasi.</span>`;
 }
 
 function render(){
@@ -280,217 +941,1050 @@ function render(){
   if(route==='#home') app.innerHTML=homePage();
   else if(route==='#ormas-portal') app.innerHTML=portalPage();
   else if(route==='#public-dashboard') app.innerHTML=publicDashboard();
-  else if(route==='#application') app.innerHTML=applicationPage();
-  else if(route==='#skt-form') app.innerHTML=sktFormPage();
-  else if(route==='#activity-report') app.innerHTML=activeReportPage();
+  else if(route==='#registration') app.innerHTML=registrationPage();
+  else if(route==='#ormas-login') app.innerHTML=loginPage();
+  else if(route==='#activity-report') app.innerHTML=activityReportPage();
   else if(route==='#admin-dashboard') app.innerHTML=adminDashboard();
-  else if(route==='#admin-requests') app.innerHTML=adminRequests();
-  else if(route==='#admin-detail') app.innerHTML=adminDetail();
-  else if(route==='#admin-skt-monitor') app.innerHTML=adminSktMonitor();
-  else if(route==='#admin-activity-monitor') app.innerHTML=adminActivityMonitor();
-  else if(route==='#admin-activity-detail') app.innerHTML=adminActivityDetail();
+  else if(route==='#admin-reports') app.innerHTML=adminReportsPage();
+  else if(route==='#admin-report-detail') app.innerHTML=adminReportDetail();
   else app.innerHTML=homePage();
   window.scrollTo(0,0);
+  if(route==='#public-dashboard') setTimeout(()=>{renderPublicDirectoryV2();updateRegionDetailV2(publicDirectoryStateV2.region);},0);
 }
 
-// Public-safe ORMAS directory added for both public and employee dashboards.
-// This table is intentionally limited to organization-level contact data only.
-// It does not show ticket numbers, NIK, personal addresses, personal phone numbers, uploaded documents, or verification notes.
-const publicOrmasDirectory = [
-  {name:'Jurnal Demokrasi', short:'Jurdem', type:'Non Badan Hukum / SKT', field:'Pendidikan Politik', wilayah:'Gambir, Jakarta Pusat', email:'jurnaldemokrasi.poldem@gmail.com', phone:'021-3102401', website:'jurdem.or.id', activity:'Aktif melapor', contact:'Email / Website'},
-  {name:'Gerakan Anti Narkoba Nasional', short:'GANNAS', type:'Badan Hukum', field:'Sosial & Pencegahan Narkoba', wilayah:'Cipayung, Jakarta Timur', email:'sekretariat@gannas.or.id', phone:'021-8459012', website:'gannas.or.id', activity:'Aktif melapor', contact:'Email / Telepon'},
-  {name:'Yayasan Peduli Pendidikan Anak Bangsa', short:'YPPA', type:'Non Badan Hukum / SKT', field:'Pendidikan', wilayah:'Pasar Minggu, Jakarta Selatan', email:'kontak@yppa.or.id', phone:'021-7884120', website:'yppa.or.id', activity:'Aktif melapor', contact:'Email'},
-  {name:'Komunitas Lingkungan Hijau Jakarta', short:'KLHJ', type:'Non Badan Hukum / SKT', field:'Lingkungan', wilayah:'Tanjung Priok, Jakarta Utara', email:'info@klhj.or.id', phone:'021-4390128', website:'klhj.or.id', activity:'Perlu pembaruan laporan', contact:'Email / Telepon'},
-  {name:'Forum Pemuda Betawi Bersatu', short:'FPBB', type:'Badan Hukum', field:'Kepemudaan & Kebudayaan', wilayah:'Cengkareng, Jakarta Barat', email:'sekretariat@fpbb.or.id', phone:'021-5598120', website:'fpbb.or.id', activity:'Aktif melapor', contact:'Email / Website'},
-  {name:'Majelis Edukasi Sosial Nusantara', short:'MESN', type:'Badan Hukum', field:'Sosial & Keagamaan', wilayah:'Kemayoran, Jakarta Pusat', email:'majelis.edukasi@example.org', phone:'021-4288123', website:'-', activity:'Aktif melapor', contact:'Email / Telepon'}
-];
 
-function publicOrmasDirectoryTable(context='public'){
-  const title = context === 'admin'
-    ? 'Direktori ORMAS Publik yang Tampil di Halaman Masyarakat'
-    : 'Direktori ORMAS Terdata';
-  const subtitle = context === 'admin'
-    ? 'Data berikut adalah contoh field yang aman ditampilkan ke publik agar ORMAS dapat saling berkomunikasi tanpa membuka data internal.'
-    : 'Data kontak organisasi yang bersifat publik untuk mempermudah komunikasi dan kolaborasi antar-ORMAS.';
-  const rows = publicOrmasDirectory.map((o,i)=>`<tr>
-    <td>${i+1}</td>
-    <td><b>${o.name}</b><br><small>${o.short} • ${o.type}</small></td>
-    <td>${o.field}</td>
-    <td>${o.wilayah}</td>
-    <td><a class="click-link" href="mailto:${o.email}">${o.email}</a><br><small>${o.phone}</small></td>
-    <td>${o.website === '-' ? '-' : `<a class="click-link" href="javascript:void(0)">${o.website}</a>`}</td>
-    <td>${o.activity.includes('Perlu') ? '<span class="pill orange">Perlu Update</span>' : '<span class="pill green">Aktif</span>'}</td>
-  </tr>`).join('');
-  return `<article class="panel table-panel public-directory-panel"><div class="panel-head"><div><h3>${title}</h3><p class="muted">${subtitle}</p></div><button class="outline-btn" onclick="toast('Mockup: export direktori publik ORMAS')">Export Direktori</button></div><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Bidang</th><th>Wilayah</th><th>Kontak Publik</th><th>Website</th><th>Status Publik</th></tr></thead><tbody>${rows}</tbody></table><div class="public-note"><b>Batasan data publik:</b> tabel ini hanya menampilkan nama ORMAS, bidang, wilayah sekretariat secara umum, email/telepon organisasi, website, dan status publik. Nomor tiket, NIK pengurus, nomor HP pribadi, alamat rumah, dokumen upload, catatan verifikasi, dan status koreksi tidak ditampilkan.</div></article>`;
+/* === PATCH: Public dashboard KPI retained, regional summary removed, and activity trend added === */
+var selectedActivityYearV3 = '2026';
+var monthlyActivityReportsByYearV3 = {
+  '2024': [
+    { month: 'Jan', total: 61 }, { month: 'Feb', total: 68 }, { month: 'Mar', total: 74 },
+    { month: 'Apr', total: 79 }, { month: 'Mei', total: 86 }, { month: 'Jun', total: 91 },
+    { month: 'Jul', total: 97 }, { month: 'Agu', total: 102 }, { month: 'Sep', total: 109 },
+    { month: 'Okt', total: 115 }, { month: 'Nov', total: 121 }, { month: 'Des', total: 128 }
+  ],
+  '2025': [
+    { month: 'Jan', total: 82 }, { month: 'Feb', total: 94 }, { month: 'Mar', total: 107 },
+    { month: 'Apr', total: 116 }, { month: 'Mei', total: 129 }, { month: 'Jun', total: 143 },
+    { month: 'Jul', total: 151 }, { month: 'Agu', total: 164 }, { month: 'Sep', total: 172 },
+    { month: 'Okt', total: 181 }, { month: 'Nov', total: 193 }, { month: 'Des', total: 207 }
+  ],
+  '2026': [
+    { month: 'Jan', total: 112 }, { month: 'Feb', total: 138 }, { month: 'Mar', total: 166 },
+    { month: 'Apr', total: 192 }, { month: 'Mei', total: 218 }, { month: 'Jun', total: 242 },
+    { month: 'Jul', total: 216 }
+  ]
+};
+
+function selectedMonthlyActivityV3(){
+  return monthlyActivityReportsByYearV3[selectedActivityYearV3] || monthlyActivityReportsByYearV3['2026'];
 }
-
-function publicDashboardContent(){return `<div class="dashboard-full public-only">${publicFilterRow()}<div class="kpi-grid">${kpi('Total ORMAS Terdata','6.842','Rekap agregat se-DKI Jakarta','blue','👥')}${kpi('Berbadan Hukum','3.256','47,6% dari total ORMAS','green','✅')}${kpi('Non Badan Hukum / SKT','3.586','52,4% dari total ORMAS','yellow','📄')}${kpi('Kepengurusan Aktif','5.106','74,7% dari total ORMAS','green','🗓️')}${kpi('Bidang Terbanyak','Sosial','1.842 ORMAS','blue','🤝')}${kpi('Wilayah Terbanyak','Jakarta Timur','1.460 ORMAS','blue','📍')}</div><div class="public-note"><b>Catatan Dashboard Publik:</b> halaman ini hanya menampilkan data agregat dan direktori publik organisasi. Nomor tiket, status verifikasi internal, catatan revisi, nomor HP pribadi pengurus, dokumen upload, dan tindakan pegawai tidak ditampilkan untuk publik.</div><div class="chart-grid"><article class="panel wide"><h3>Tren Lapor Keberadaan ORMAS</h3>${vBars([['Jan',920,55],['Feb',980,60],['Mar',1120,68],['Apr',1260,76],['Mei',1480,88],['Jun',1588,94],['Jul',1680,100]])}</article><article class="panel"><h3>Status Badan Hukum</h3>${donut([['Badan Hukum',3256,'#22c55e'],['Non Badan Hukum / SKT',3586,'#fbbf24']])}</article><article class="panel wide"><h3>Sebaran ORMAS per Wilayah</h3>${vBars(wilayah)}</article><article class="panel"><h3>Bidang Kegiatan Utama</h3>${barChart(bidang)}</article><article class="panel map-panel"><h3>Peta Sebaran ORMAS</h3>${mapPanel()}</article><article class="panel"><h3>Status Kepengurusan</h3>${donut([['Aktif',5106,'#22c55e'],['Akan Berakhir',894,'#fbbf24'],['Kadaluarsa',842,'#ef4444']],'6.842')}</article><article class="panel"><h3>Cabang / Unit / Sayap Organisasi</h3>${donut([['Memiliki',2388,'#5371ff'],['Tidak Memiliki',4454,'#d0d5dd']],'6.842')}</article><article class="panel"><h3>Ringkasan Kontak Organisasi</h3>${barChart([['Memiliki Email',6280,92],['Memiliki Telepon',5915,86],['Memiliki Website',2810,41]])}</article></div>${publicOrmasDirectoryTable('public')}${publicTable()}</div>`;}
-
-function fullDashboard(isAdmin=false){
-  if(!isAdmin) return publicDashboardContent();
-  return `<div class="dashboard-full">${filterRow()}<div class="kpi-grid">${kpi('Total ORMAS','6.842','Terdata di DKI Jakarta','blue','👥')}${kpi('Pengajuan Tanda Lapor/SKT','312','Proses surat/tanda lapor','blue','📄')}${kpi('Pelaporan Keaktifan','1.284','Laporan kegiatan masuk','green','📌')}${kpi('Menunggu Review','150','SKT dan kegiatan','orange','⏳')}${kpi('Perlu Koreksi/Bukti','200','Perlu tindak lanjut','red','⚠️')}${kpi('Output Selesai','1.217','Surat/laporan valid','green','✅')}</div><div class="chart-grid"><article class="panel wide"><h3>Tren Pengajuan SKT dan Laporan Keaktifan</h3>${vBars([['Jan',140,45],['Feb',169,54],['Mar',208,67],['Apr',231,74],['Mei',272,87],['Jun',303,100],['Jul',273,90]])}</article><article class="panel"><h3>Status Operasional Internal</h3>${donut([['Menunggu Review',150,'#fbbf24'],['Koreksi/Bukti Tambahan',200,'#fb923c'],['Selesai',1217,'#22c55e'],['Ditolak',29,'#ef4444']],'1.596')}</article><article class="panel"><h3>Layanan Masuk</h3>${barChart([['Pelaporan Keaktifan',1284,100],['Tanda Lapor/SKT',312,24],['Pendaftaran Ormas Baru',221,17],['Pemutakhiran Data',184,14]])}</article><article class="panel"><h3>Monitoring Tanda Lapor / SKT</h3>${barChart([['Surat Terbit',152,100],['Perlu Koreksi',74,49],['Menunggu Cek',57,38],['Siap Terbit',29,19]])}</article><article class="panel"><h3>Monitoring Keaktifan ORMAS</h3>${barChart([['Laporan Disetujui',1065,100],['Butuh Bukti',126,12],['Menunggu Review',93,9],['Belum Lapor',842,79]])}</article><article class="panel"><h3>Status Kepengurusan</h3>${donut([['Aktif',5106,'#22c55e'],['Akan Berakhir',894,'#fbbf24'],['Kadaluarsa',842,'#ef4444']],'6.842')}</article><article class="panel wide"><h3>Sebaran ORMAS per Wilayah</h3>${vBars(wilayah)}</article></div>${publicOrmasDirectoryTable('admin')}${dashboardTable()}<article class="panel table-panel"><div class="panel-head"><h3>Output Surat / Tanda Lapor Terbaru</h3><button class="outline-btn" onclick="go('#admin-skt-monitor')">Monitoring SKT →</button></div><table><thead><tr><th>No.</th><th>ORMAS</th><th>Nomor Surat</th><th>Tanggal</th><th>Status Output</th><th>Aksi</th></tr></thead><tbody>${suratOutputRows()}</tbody></table></article></div>`;
+function totalActivityReportsV3(){
+  return selectedMonthlyActivityV3().reduce((sum, item) => sum + item.total, 0);
 }
+window.setPublicActivityYearV3 = function(year){
+  selectedActivityYearV3 = year;
+  render();
+};
 
-/* === PATCH: Search, filter, and pagination for public-safe ORMAS directory === */
-if (typeof publicOrmasDirectory !== 'undefined' && publicOrmasDirectory.length < 20) {
-  publicOrmasDirectory.push(
-    {name:'Persatuan Warga Cinta Damai', short:'PWCD', type:'Non Badan Hukum / SKT', field:'Sosial', wilayah:'Senen, Jakarta Pusat', email:'sekretariat@pwcd.or.id', phone:'021-3908821', website:'pwcd.or.id', activity:'Aktif melapor', contact:'Email / Telepon'},
-    {name:'Yayasan Generasi Sehat Jakarta', short:'YGSJ', type:'Badan Hukum', field:'Kesehatan', wilayah:'Matraman, Jakarta Timur', email:'kontak@ygsj.or.id', phone:'021-8592011', website:'ygsj.or.id', activity:'Aktif melapor', contact:'Email / Website'},
-    {name:'Komunitas Pemuda Kreatif Utara', short:'KPKU', type:'Non Badan Hukum / SKT', field:'Kepemudaan', wilayah:'Koja, Jakarta Utara', email:'info@kpku.or.id', phone:'021-4398810', website:'-', activity:'Aktif melapor', contact:'Email / Telepon'},
-    {name:'Forum Kebudayaan Betawi Jakarta', short:'FKBJ', type:'Badan Hukum', field:'Kebudayaan', wilayah:'Setu, Jakarta Timur', email:'sekretariat@fkbj.or.id', phone:'021-8457721', website:'fkbj.or.id', activity:'Aktif melapor', contact:'Email / Website'},
-    {name:'Lembaga Bantuan Sosial Harapan', short:'LBSH', type:'Badan Hukum', field:'Sosial', wilayah:'Kebayoran Baru, Jakarta Selatan', email:'admin@lbsh.or.id', phone:'021-7221031', website:'lbsh.or.id', activity:'Perlu pembaruan laporan', contact:'Email / Telepon'},
-    {name:'Komunitas Relawan Bencana Jakarta', short:'KRBJ', type:'Non Badan Hukum / SKT', field:'Kemanusiaan', wilayah:'Kalideres, Jakarta Barat', email:'relawan@krbj.or.id', phone:'021-5439910', website:'krbj.or.id', activity:'Aktif melapor', contact:'Email / Website'},
-    {name:'Perkumpulan Edukasi Lingkungan Pesisir', short:'PELP', type:'Badan Hukum', field:'Lingkungan', wilayah:'Penjaringan, Jakarta Utara', email:'pesisir@pelp.or.id', phone:'021-6668892', website:'pelp.or.id', activity:'Aktif melapor', contact:'Email / Telepon'},
-    {name:'Majelis Silaturahmi Warga Jakarta', short:'MSWJ', type:'Non Badan Hukum / SKT', field:'Keagamaan', wilayah:'Duren Sawit, Jakarta Timur', email:'majelis@mswj.or.id', phone:'021-8612204', website:'-', activity:'Aktif melapor', contact:'Email'},
-    {name:'Yayasan Literasi Nusantara', short:'YLN', type:'Badan Hukum', field:'Pendidikan', wilayah:'Palmerah, Jakarta Barat', email:'info@yln.or.id', phone:'021-5360012', website:'yln.or.id', activity:'Aktif melapor', contact:'Email / Website'},
-    {name:'Asosiasi Profesi Wirausaha Mandiri', short:'APWM', type:'Badan Hukum', field:'Profesi', wilayah:'Menteng, Jakarta Pusat', email:'sekretariat@apwm.or.id', phone:'021-3191120', website:'apwm.or.id', activity:'Perlu pembaruan laporan', contact:'Email / Telepon'},
-    {name:'Komunitas Sahabat Anak Jakarta', short:'KSAJ', type:'Non Badan Hukum / SKT', field:'Kemanusiaan', wilayah:'Jagakarsa, Jakarta Selatan', email:'hello@ksaj.or.id', phone:'021-7889901', website:'ksaj.or.id', activity:'Aktif melapor', contact:'Email / Website'},
-    {name:'Gerakan Bersih Kali Jakarta', short:'GBKJ', type:'Non Badan Hukum / SKT', field:'Lingkungan', wilayah:'Cilincing, Jakarta Utara', email:'gerakan@gbkj.or.id', phone:'021-4480100', website:'gbkj.or.id', activity:'Aktif melapor', contact:'Email / Telepon'},
-    {name:'Forum Kepemudaan Lenteng Agung', short:'FKLA', type:'Non Badan Hukum / SKT', field:'Kepemudaan', wilayah:'Jagakarsa, Jakarta Selatan', email:'kontak@fkla.or.id', phone:'021-7884500', website:'-', activity:'Aktif melapor', contact:'Email'},
-    {name:'Perkumpulan Seni Budaya Nusantara', short:'PSBN', type:'Badan Hukum', field:'Kebudayaan', wilayah:'Tambora, Jakarta Barat', email:'psbn@budaya.or.id', phone:'021-6903312', website:'psbn.or.id', activity:'Aktif melapor', contact:'Email / Website'},
-    {name:'Yayasan Rumah Belajar Cendekia', short:'YRBC', type:'Badan Hukum', field:'Pendidikan', wilayah:'Cakung, Jakarta Timur', email:'rumahbelajar@yrbc.or.id', phone:'021-4680123', website:'yrbc.or.id', activity:'Aktif melapor', contact:'Email / Website'},
-    {name:'Paguyuban Warga Kepulauan Seribu', short:'PWKS', type:'Non Badan Hukum / SKT', field:'Sosial', wilayah:'Pulau Pramuka, Kepulauan Seribu', email:'sekretariat@pwks.or.id', phone:'021-7070001', website:'-', activity:'Perlu pembaruan laporan', contact:'Email / Telepon'},
-    {name:'Komunitas Kesehatan Remaja Jakarta', short:'KKRJ', type:'Badan Hukum', field:'Kesehatan', wilayah:'Tebet, Jakarta Selatan', email:'remaja@kkrj.or.id', phone:'021-8378200', website:'kkrj.or.id', activity:'Aktif melapor', contact:'Email / Website'},
-    {name:'Lembaga Kajian Demokrasi Kota', short:'LKDK', type:'Badan Hukum', field:'Pendidikan Politik', wilayah:'Tanah Abang, Jakarta Pusat', email:'kajian@lkdk.or.id', phone:'021-3927001', website:'lkdk.or.id', activity:'Aktif melapor', contact:'Email / Telepon'},
-    {name:'Forum Komunikasi Sosial Barat', short:'FKSB', type:'Non Badan Hukum / SKT', field:'Sosial & Kemanusiaan', wilayah:'Kembangan, Jakarta Barat', email:'info@fksb.or.id', phone:'021-5830200', website:'fksb.or.id', activity:'Aktif melapor', contact:'Email / Website'}
-  );
-}
+portalPage = function(){
+  return `${publicHeader()}<main class="page"><div class="container"><div class="crumb">Beranda / Layanan / Pendaftaran Ormas</div><section class="portal-hero"><div><span class="pill cyan">Menu Pendaftaran ORMAS</span><h1>Pendaftaran & Pelaporan ORMAS</h1><p>Pilih layanan yang dibutuhkan setelah membuka menu Pendaftaran Ormas dari halaman utama.</p></div><button class="btn light" onclick="go('#home')">Kembali ke Beranda</button></section><div class="quick-grid portal-modules-v2"><article class="quick-card" onclick="go('#public-dashboard')"><span class="pill blue">Publik</span><h3>Dashboard Publik ORMAS</h3><p>Menampilkan ringkasan utama, tren laporan keberadaan, tren keaktifan, peta sebaran, dan direktori ORMAS.</p><button class="btn blue">Lihat Dashboard Publik</button></article><article class="quick-card" onclick="go('#registration')"><span class="pill orange">Pendaftaran</span><h3>Form Pendaftaran ORMAS</h3><p>Mengisi data pendaftaran ORMAS dengan Bidang Wilayah berbentuk dropdown dan Periode ORMAS.</p><button class="btn">Mulai Pendaftaran</button></article><article class="quick-card" onclick="go('#ormas-login')"><span class="pill green">Keaktifan</span><h3>Pelaporan Keaktifan ORMAS</h3><p>ORMAS login untuk melaporkan satu kegiatan per laporan dan mengunggah maksimal tiga foto.</p><button class="btn">Login & Lapor Kegiatan</button></article></div></div></main>${footer()}`;
+};
 
-function normalizeTextForDirectory(value){
-  return String(value || '').toLowerCase();
-}
+publicDashboard = function(){
+  return `${publicHeader()}<main class="page public-only"><div class="container"><div class="crumb">Beranda / Pendaftaran Ormas / Dashboard Publik</div><div class="public-top"><section class="public-hero"><span class="pill cyan">Dapat Diakses Tanpa Login</span><h1>Dashboard Publik ORMAS</h1><p>Informasi publik mengenai keberadaan, keaktifan, persebaran, dan direktori ORMAS di Provinsi DKI Jakarta.</p></section><button class="btn" onclick="go('#ormas-portal')">Kembali ke Menu ORMAS</button></div>
+  <div class="public-focus-kpis public-focus-kpis-v3">
+    ${kpi('Total ORMAS Terdata','6.842','Rekap agregat se-DKI Jakarta','blue','👥')}
+    ${kpi('Berbadan Hukum','3.256','47,6% dari total ORMAS','green','✓')}
+    ${kpi('Non Badan Hukum / SKT','3.586','52,4% dari total ORMAS','yellow','📄')}
+    ${kpi('Kepengurusan Aktif','5.106','74,7% dari total ORMAS','green','🗓️')}
+    ${kpi('Bidang Terbanyak','Sosial','1.842 ORMAS','blue','🤝')}
+    ${kpi('Wilayah Terbanyak','Jakarta Timur','1.460 ORMAS','blue','📍')}
+  </div>
+  <div class="public-trend-grid-v3">
+    <article class="panel trend-feature trend-feature-v3"><div class="panel-head"><div><h3>A. Grafik Tren Laporan Keberadaan ORMAS</h3><p class="muted">Jumlah ORMAS berbadan hukum yang melaporkan keberadaannya setiap bulan.</p></div><label class="inline-filter">Filter Tahun<select onchange="setPublicYearV2(this.value)"><option ${selectedPublicYearV2==='2024'?'selected':''}>2024</option><option ${selectedPublicYearV2==='2025'?'selected':''}>2025</option><option ${selectedPublicYearV2==='2026'?'selected':''}>2026</option></select></label></div><div class="trend-total"><small>Total Pelaporan Tahun ${selectedPublicYearV2}</small><strong>${totalReportsV2().toLocaleString('id-ID')}</strong></div>${verticalBars(selectedMonthlyReportsV2())}</article>
+    <article class="panel trend-feature trend-feature-v3 activity-trend-v3"><div class="panel-head"><div><h3>B. Grafik Tren Keaktifan ORMAS</h3><p class="muted">Jumlah laporan kegiatan ORMAS yang telah diverifikasi setiap bulan.</p></div><label class="inline-filter">Filter Tahun<select onchange="setPublicActivityYearV3(this.value)"><option ${selectedActivityYearV3==='2024'?'selected':''}>2024</option><option ${selectedActivityYearV3==='2025'?'selected':''}>2025</option><option ${selectedActivityYearV3==='2026'?'selected':''}>2026</option></select></label></div><div class="trend-total activity-total-v3"><small>Total Laporan Keaktifan Tahun ${selectedActivityYearV3}</small><strong>${totalActivityReportsV3().toLocaleString('id-ID')}</strong></div>${verticalBars(selectedMonthlyActivityV3())}</article>
+  </div>
+  <article class="panel map-feature map-feature-v3"><h3>C. Sebaran ORMAS</h3><p class="muted">Klik wilayah pada peta untuk melihat jumlah ORMAS dan menyaring direktori.</p>${interactiveMapV2()}<div id="regionDetailV2" class="region-detail-v2"><b>Seluruh DKI Jakarta</b><span>Total 6.842 ORMAS pada 6 wilayah administrasi.</span></div></article>
+  <article class="panel table-panel public-directory-panel"><div class="panel-head"><div><h3>D. Direktori ORMAS</h3><p class="muted">Daftar data ORMAS yang aman ditampilkan kepada masyarakat.</p></div><button class="outline-btn" onclick="resetPublicDirectoryV2()">Reset Pencarian</button></div><div class="directory-toolbar directory-toolbar-v2"><label class="directory-search-field">Cari ORMAS<input id="publicSearchV2" type="search" placeholder="Nama ORMAS, ketua, alamat, atau bidang..." oninput="updatePublicDirectoryFilterV2('search',this.value)"></label><label>Wilayah<select id="publicRegionV2" onchange="updatePublicDirectoryFilterV2('region',this.value)"><option value="">Semua Wilayah</option>${regionData.map(item=>`<option value="${item.name}">${item.name}</option>`).join('')}</select></label><label>Bidang<select id="publicFieldV2" onchange="updatePublicDirectoryFilterV2('field',this.value)"><option value="">Semua Bidang</option>${[...new Set(publicDirectoryV2.map(item=>item.field))].sort().map(item=>`<option value="${item}">${item}</option>`).join('')}</select></label><label>Status Keaktifan<select id="publicStatusV2" onchange="updatePublicDirectoryFilterV2('status',this.value)"><option value="">Semua Status</option><option>Aktif</option><option>Tidak Aktif</option></select></label><label>Baris per halaman<select id="publicPerPageV2" onchange="updatePublicDirectoryPageSizeV2(this.value)"><option value="5">5</option><option value="10">10</option><option value="25">25</option></select></label></div><div class="table-scroll"><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Nama Ketua</th><th>Wilayah</th><th>Alamat</th><th>Bidang</th><th>Status Keaktifan</th></tr></thead><tbody id="publicDirectoryBodyV2"></tbody></table></div><div class="directory-pagination"><span id="publicDirectoryInfoV2"></span><div id="publicDirectoryPagesV2" class="directory-pages"></div></div></article>
+  </div></main>${footer()}`;
+};
 
-function directoryUniqueValues(key){
-  const values = publicOrmasDirectory.map(item => item[key]).filter(Boolean);
-  return [...new Set(values)].sort((a,b) => a.localeCompare(b, 'id-ID'));
-}
+// Repaint once after this patch is initialized so the public dashboard uses the latest layout.
+setTimeout(render, 0);
 
-function directoryRegionGroup(wilayah){
-  if(!wilayah) return '';
-  const parts = wilayah.split(',').map(x => x.trim());
-  return parts[parts.length - 1] || wilayah;
-}
+/* === PATCH: account registration must happen before Form Pendaftaran ORMAS === */
+var registrationAccountTypeV4 = 'organization';
+var pendingLoginDestinationV4 = '#application';
 
-function directoryOptionList(values, selected=''){
-  return values.map(v => `<option value="${v}" ${selected === v ? 'selected' : ''}>${v}</option>`).join('');
-}
+window.setRegistrationAccountTypeV4 = function(type){
+  registrationAccountTypeV4 = type === 'personal' ? 'personal' : 'organization';
+  render();
+};
 
-function getDirectoryState(context){
-  const q = normalizeTextForDirectory(document.getElementById(`directory-search-${context}`)?.value || '');
-  const wilayah = document.getElementById(`directory-wilayah-${context}`)?.value || '';
-  const bidang = document.getElementById(`directory-bidang-${context}`)?.value || '';
-  const jenis = document.getElementById(`directory-jenis-${context}`)?.value || '';
-  const status = document.getElementById(`directory-status-${context}`)?.value || '';
-  const pageSize = Number(document.getElementById(`directory-page-size-${context}`)?.value || 5);
-  const page = Number(document.getElementById(`directory-page-${context}`)?.value || 1);
-  return {q, wilayah, bidang, jenis, status, pageSize, page};
-}
+window.openOrmasLoginV4 = function(destination){
+  pendingLoginDestinationV4 = destination || '#application';
+  go('#ormas-login');
+};
 
-function getFilteredDirectory(context){
-  const state = getDirectoryState(context);
-  return publicOrmasDirectory.filter(o => {
-    const haystack = normalizeTextForDirectory(`${o.name} ${o.short} ${o.type} ${o.field} ${o.wilayah} ${o.email} ${o.phone} ${o.website}`);
-    const matchSearch = !state.q || haystack.includes(state.q);
-    const matchWilayah = !state.wilayah || directoryRegionGroup(o.wilayah) === state.wilayah;
-    const matchBidang = !state.bidang || o.field === state.bidang;
-    const matchJenis = !state.jenis || o.type === state.jenis;
-    const matchStatus = !state.status || (state.status === 'Aktif' ? !o.activity.includes('Perlu') : o.activity.includes('Perlu'));
-    return matchSearch && matchWilayah && matchBidang && matchJenis && matchStatus;
-  });
-}
-
-function renderDirectoryRows(context, page=1){
-  const state = getDirectoryState(context);
-  const filtered = getFilteredDirectory(context);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize));
-  const safePage = Math.min(Math.max(page, 1), totalPages);
-  const start = (safePage - 1) * state.pageSize;
-  const shown = filtered.slice(start, start + state.pageSize);
-  if(!shown.length){
-    return `<tr><td colspan="7" class="empty-directory">Tidak ada ORMAS yang sesuai dengan pencarian/filter.</td></tr>`;
+function accountRegistrationFieldsV4(){
+  if(registrationAccountTypeV4 === 'personal'){
+    return `<div class="auth-form-grid">
+      <div class="field auth-full"><label>Alamat Email</label><input type="email" required placeholder="Alamat Email"></div>
+      <div class="field auth-full"><label>Nama Lengkap</label><input required placeholder="Masukkan nama lengkap"></div>
+      <div class="field auth-full"><label>Alamat</label><textarea required maxlength="200" placeholder="Masukkan alamat"></textarea><small>0 / 200</small></div>
+      <div class="field auth-full"><label>Instansi</label><input placeholder="Masukkan instansi (opsional)"></div>
+      <div class="field auth-full"><label>No. Telp/ HP</label><input required placeholder="Masukkan no telp/ hp"></div>
+    </div>`;
   }
-  return shown.map((o,i)=>`<tr>
-    <td>${start + i + 1}</td>
-    <td><b>${o.name}</b><br><small>${o.short} • ${o.type}</small></td>
-    <td>${o.field}</td>
-    <td>${o.wilayah}</td>
-    <td><a class="click-link" href="mailto:${o.email}">${o.email}</a><br><small>${o.phone}</small></td>
-    <td>${o.website === '-' ? '-' : `<a class="click-link" href="javascript:void(0)">${o.website}</a>`}</td>
-    <td>${o.activity.includes('Perlu') ? '<span class="pill orange">Perlu Update</span>' : '<span class="pill green">Aktif</span>'}</td>
-  </tr>`).join('');
-}
-
-function renderDirectoryPagination(context, page=1){
-  const state = getDirectoryState(context);
-  const filtered = getFilteredDirectory(context);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize));
-  const safePage = Math.min(Math.max(page, 1), totalPages);
-  const start = filtered.length ? ((safePage - 1) * state.pageSize) + 1 : 0;
-  const end = Math.min(safePage * state.pageSize, filtered.length);
-  const visiblePages = Array.from({length: totalPages}, (_,i) => i + 1).slice(0, 5);
-  const buttons = visiblePages.map(p => `<button class="page-btn ${p === safePage ? 'active' : ''}" onclick="updateDirectory('${context}', ${p})">${p}</button>`).join('');
-  return `<div class="directory-pagination-left">Menampilkan <b>${start}-${end}</b> dari <b>${filtered.length}</b> data</div>
-  <div class="directory-pages">
-    <button class="page-btn" ${safePage === 1 ? 'disabled' : ''} onclick="updateDirectory('${context}', ${safePage - 1})">‹ Sebelumnya</button>
-    ${buttons}
-    <button class="page-btn" ${safePage === totalPages ? 'disabled' : ''} onclick="updateDirectory('${context}', ${safePage + 1})">Berikutnya ›</button>
+  return `<div class="auth-form-grid">
+    <div class="field auth-full"><label>Alamat Email</label><input type="email" required placeholder="Alamat Email"></div>
+    <div class="field auth-full"><label>Nama Lembaga/ Organisasi Masyarakat</label><input required placeholder="Masukkan nama lembaga/ organisasi masyarakat"></div>
+    <div class="field auth-full"><label>Alamat Lembaga/ Organisasi Masyarakat</label><textarea required maxlength="200" placeholder="Masukkan alamat lembaga/ organisasi masyarakat"></textarea><small>0 / 200</small></div>
+    <div class="field auth-full"><label>No. Telp/ HP</label><input required placeholder="Masukkan no telp/ hp"></div>
   </div>`;
 }
 
-function updateDirectory(context, page=1){
-  const pageInput = document.getElementById(`directory-page-${context}`);
-  if(pageInput) pageInput.value = String(page);
-  const body = document.getElementById(`directory-body-${context}`);
-  const pagination = document.getElementById(`directory-pagination-${context}`);
-  if(body) body.innerHTML = renderDirectoryRows(context, page);
-  if(pagination) pagination.innerHTML = renderDirectoryPagination(context, page);
+function registrationTutorialV4(){
+  return `<aside class="registration-tutorial-v4">
+    <span class="pill cyan">Tutorial Pendaftaran ORMAS</span>
+    <h2>Daftar akun terlebih dahulu</h2>
+    <p>Akun diperlukan agar data pendaftaran, status proses, dan laporan keaktifan tersimpan pada ORMAS yang benar.</p>
+    <ol class="tutorial-steps-v4">
+      <li><b>Daftar akun</b><span>Pilih Lembaga/Organisasi untuk membuat akun ORMAS.</span></li>
+      <li><b>Verifikasi dan masuk</b><span>Gunakan akun yang telah dibuat untuk masuk ke layanan ORMAS.</span></li>
+      <li><b>Isi Data ORMAS</b><span>Lengkapi data organisasi pada Form Pendaftaran ORMAS.</span></li>
+      <li><b>Pilih Bidang Wilayah</b><span>Pilih dari dropdown master Bidang Kesbangpol.</span></li>
+      <li><b>Isi Periode ORMAS</b><span>Tentukan tanggal mulai dan berakhir periode ORMAS.</span></li>
+      <li><b>Submit data</b><span>Data tersimpan ke database dan dapat dipantau melalui akun.</span></li>
+    </ol>
+    <div class="tutorial-note-v4"><b>Sudah punya akun?</b><p>Langsung masuk untuk melanjutkan Form Pendaftaran ORMAS.</p><button class="btn blue" onclick="openOrmasLoginV4('#application')">Masuk ke Akun</button></div>
+  </aside>`;
 }
 
-function resetDirectory(context){
-  [`directory-search-${context}`, `directory-wilayah-${context}`, `directory-bidang-${context}`, `directory-jenis-${context}`, `directory-status-${context}`].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.value = '';
-  });
-  const pageSize = document.getElementById(`directory-page-size-${context}`);
-  if(pageSize) pageSize.value = '5';
-  updateDirectory(context, 1);
-}
-
-function initDirectoryTables(){
-  ['public','admin'].forEach(context => {
-    if(document.getElementById(`directory-body-${context}`)) updateDirectory(context, 1);
-  });
-}
-
-function publicOrmasDirectoryTable(context='public'){
-  const title = context === 'admin'
-    ? 'Direktori ORMAS Publik yang Tampil di Halaman Masyarakat'
-    : 'Direktori ORMAS Terdata';
-  const subtitle = context === 'admin'
-    ? 'Pegawai dapat meninjau data publik yang ditampilkan ke masyarakat. Gunakan pencarian dan filter untuk mengecek data yang aman dibagikan.'
-    : 'Gunakan pencarian dan filter untuk menemukan ORMAS berdasarkan nama, bidang, wilayah, jenis ORMAS, kontak, atau website.';
-  const wilayahOptions = directoryOptionList(directoryUniqueValues('wilayah').map(directoryRegionGroup).filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,'id-ID')));
-  const bidangOptions = directoryOptionList(directoryUniqueValues('field'));
-  const jenisOptions = directoryOptionList(directoryUniqueValues('type'));
-  return `<article class="panel table-panel public-directory-panel"><div class="panel-head"><div><h3>${title}</h3><p class="muted">${subtitle}</p></div><button class="outline-btn" onclick="toast('Mockup: export direktori publik ORMAS')">Export Direktori</button></div>
-  <div class="directory-toolbar">
-    <label class="directory-search-field">Cari ORMAS / Kontak<input id="directory-search-${context}" type="search" placeholder="Cari nama ORMAS, bidang, wilayah, email, website..." oninput="updateDirectory('${context}', 1)"></label>
-    <label>Wilayah<select id="directory-wilayah-${context}" onchange="updateDirectory('${context}', 1)"><option value="">Semua Wilayah</option>${wilayahOptions}</select></label>
-    <label>Bidang<select id="directory-bidang-${context}" onchange="updateDirectory('${context}', 1)"><option value="">Semua Bidang</option>${bidangOptions}</select></label>
-    <label>Jenis ORMAS<select id="directory-jenis-${context}" onchange="updateDirectory('${context}', 1)"><option value="">Semua Jenis</option>${jenisOptions}</select></label>
-    <label>Status<select id="directory-status-${context}" onchange="updateDirectory('${context}', 1)"><option value="">Semua Status</option><option>Aktif</option><option>Perlu Update</option></select></label>
-    <label>Tampil<select id="directory-page-size-${context}" onchange="updateDirectory('${context}', 1)"><option value="5">5 data</option><option value="10">10 data</option><option value="25">25 data</option></select></label>
-    <button class="outline-btn directory-reset" onclick="resetDirectory('${context}')">Reset</button>
-  </div>
-  <input type="hidden" id="directory-page-${context}" value="1">
-  <div class="table-scroll"><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Bidang</th><th>Wilayah</th><th>Kontak Publik</th><th>Website</th><th>Status Publik</th></tr></thead><tbody id="directory-body-${context}">${renderDirectoryRows(context,1)}</tbody></table></div>
-  <div class="directory-pagination" id="directory-pagination-${context}">${renderDirectoryPagination(context,1)}</div>
-  <div class="public-note"><b>Batasan data publik:</b> tabel ini hanya menampilkan nama ORMAS, bidang, wilayah sekretariat secara umum, email/telepon organisasi, website, dan status publik. Nomor tiket, NIK pengurus, nomor HP pribadi, alamat rumah, dokumen upload, catatan verifikasi, dan status koreksi tidak ditampilkan.</div></article>`;
-}
-
-const __previousRenderWithDirectory = render;
-render = function(){
-  __previousRenderWithDirectory();
-  initDirectoryTables();
+registrationPage = function(){
+  const isOrg = registrationAccountTypeV4 === 'organization';
+  return `<main class="register-account-page-v4">
+    <header class="register-account-header-v4">
+      <a class="register-brand-v4" href="#home"><div class="logo-mark"></div><div><b>Provinsi DKI Jakarta</b><span>BAKESBANGPOL</span></div></a>
+      <button class="icon-btn" title="Toggle theme">☾</button>
+    </header>
+    <div class="register-account-shell-v4">
+      ${registrationTutorialV4()}
+      <section class="register-account-card-v4">
+        <div class="account-tabs-v4" role="tablist">
+          <button class="${!isOrg?'active':''}" type="button" onclick="setRegistrationAccountTypeV4('personal')">Pribadi/Warga</button>
+          <button class="${isOrg?'active':''}" type="button" onclick="setRegistrationAccountTypeV4('organization')">Lembaga/Organisasi</button>
+        </div>
+        <div class="register-account-copy-v4">
+          <span class="pill ${isOrg?'green':'blue'}">${isOrg?'Lembaga/Organisasi':'Pribadi/Warga'}</span>
+          <h1>${isOrg?'Pendaftaran Untuk Lembaga atau Organisasi':'Pendaftaran Untuk Masyarakat Umum'}</h1>
+          <p>${isOrg?'Buat akun lembaga/organisasi terlebih dahulu sebelum mengisi Form Pendaftaran ORMAS.':'Buat akun pribadi/warga untuk mengakses layanan masyarakat.'}</p>
+        </div>
+        <form onsubmit="submitAccountRegistrationV4(event)">
+          ${accountRegistrationFieldsV4()}
+          <button type="submit" class="primary-btn full-button">Daftar</button>
+        </form>
+        <div class="register-account-links-v4">Sudah punya akun? <button type="button" onclick="openOrmasLoginV4('#application')">Masuk di sini</button> atau kembali ke <a href="#home">Halaman Utama</a></div>
+      </section>
+    </div>
+  </main>`;
 };
+
+window.submitAccountRegistrationV4 = function(event){
+  event.preventDefault();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-backdrop';
+  overlay.innerHTML = `<div class="modal registration-success-v4"><div class="success-check-v4">✓</div><h2>Pendaftaran akun berhasil</h2><p>Akun ${registrationAccountTypeV4==='organization'?'lembaga/organisasi':'pribadi/warga'} telah dibuat dalam simulasi. Langkah berikutnya adalah masuk dan melengkapi Form Pendaftaran ORMAS.</p><div class="modal-actions"><button class="btn" onclick="this.closest('.modal-backdrop').remove();go('#ormas-portal')">Kembali ke Menu</button><button class="btn primary" onclick="this.closest('.modal-backdrop').remove();openOrmasLoginV4('#application')">Masuk & Lanjut Pendaftaran</button></div></div>`;
+  document.body.appendChild(overlay);
+};
+
+loginPage = function(){
+  const forRegistration = pendingLoginDestinationV4 === '#application';
+  return `${publicHeader()}<main class="page login-page"><div class="container login-wrap"><section class="form-card login-card login-card-v4"><div class="mini-logo"></div><span class="pill ${forRegistration?'orange':'green'}">${forRegistration?'Pendaftaran ORMAS':'Pelaporan Keaktifan'}</span><h1>${forRegistration?'Masuk untuk Melanjutkan Pendaftaran ORMAS':'Login ORMAS'}</h1><p class="muted">${forRegistration?'Setelah masuk, lengkapi data ORMAS, Bidang Wilayah, dan Periode ORMAS.':'Login diperlukan untuk mengakses menu Pelaporan Keaktifan ORMAS.'}</p><form onsubmit="loginOrmasV4(event)"><div class="field"><label>Email</label><input type="email" value="ormas@example.org" required></div><div class="field"><label>Password</label><input type="password" value="12345678" required></div><button class="primary-btn full-button" type="submit">Masuk</button></form><div class="register-account-links-v4">Belum punya akun? <a href="#registration">Daftar di sini</a> atau kembali ke <a href="#home">Halaman Utama</a></div></section></div></main>${footer()}`;
+};
+
+window.loginOrmasV4 = function(event){
+  event.preventDefault();
+  toast('Login berhasil (simulasi).');
+  go(pendingLoginDestinationV4 || '#application');
+};
+
+function registrationFormTutorialV4(){
+  return `<aside class="stepper-card registration-stepper-v4"><span class="pill green">Akun Lembaga Terverifikasi</span><h3>Alur Form Pendaftaran ORMAS</h3><div class="step-list"><span>1. Isi Data ORMAS</span><span>2. Pilih Bidang Wilayah</span><span>3. Isi Periode ORMAS</span><span>4. Submit Data</span><span>5. Tersimpan ke Database</span></div><div class="info-box"><b>Bidang Wilayah</b><p>Field diubah dari textbox menjadi dropdown dengan data master Bidang Kesbangpol.</p></div><div class="info-box"><b>Periode ORMAS</b><p>Field baru berupa tanggal mulai dan tanggal berakhir periode organisasi.</p></div><button class="btn" onclick="go('#ormas-portal')">Kembali ke Menu ORMAS</button></aside>`;
+}
+
+function ormasRegistrationFormPageV4(){
+  return `${publicHeader()}<main class="page"><div class="container"><div class="crumb">Beranda / Pendaftaran Ormas / Form Pendaftaran ORMAS</div><div class="portal-hero compact-hero registration-form-hero-v4"><div><span class="pill cyan">Pengembangan Modul Existing</span><h1>Form Pendaftaran ORMAS</h1><p>Form ini diisi setelah pengguna membuat akun dan masuk ke layanan ORMAS.</p></div><span class="verified-session-v4">✓ Akun aktif</span></div><div class="app-form-layout registration-layout">${registrationFormTutorialV4()}<section class="form-card"><form id="ormasRegistrationFormV4" onsubmit="submitOrmasRegistrationV4(event)"><div class="form-section-title"><h3>Data ORMAS</h3><p>Form existing yang disempurnakan sesuai kebutuhan pengembangan.</p></div><div class="form-grid"><div class="field col2"><label>Nama ORMAS</label><input required placeholder="Masukkan nama ORMAS"></div><div class="field"><label>Jenis ORMAS</label><select required><option value="">Pilih jenis</option><option>Badan Hukum</option><option>Non Badan Hukum / SKT</option></select></div><div class="field"><label>Email Organisasi</label><input type="email" required value="ormas@example.org" placeholder="nama@organisasi.id"></div><div class="field col4"><label>Alamat Sekretariat</label><textarea required maxlength="200" placeholder="Masukkan alamat sekretariat"></textarea><small>0 / 200</small></div><div class="field col2"><label>Bidang Wilayah</label><select required><option value="">Pilih Bidang Kesbangpol</option><option>Bidang Bina Ideologi dan Wawasan Kebangsaan</option><option>Bidang Politik dan Demokrasi</option><option>Bidang Ketahanan Ekonomi, Seni, Budaya, Agama dan Kemasyarakatan</option><option>Bidang Kewaspadaan</option></select><small>Data berasal dari master Bidang Kesbangpol.</small></div><div class="field"><label>Periode ORMAS Mulai</label><input type="date" required></div><div class="field"><label>Periode ORMAS Berakhir</label><input type="date" required></div></div><div class="notice registration-database-note-v4"><b>Output:</b> setelah disubmit, data pendaftaran ORMAS tersimpan ke database dan terhubung dengan akun lembaga/organisasi.</div><div class="form-action-line"><button type="button" class="outline-btn" onclick="go('#ormas-portal')">Kembali</button><button type="submit" class="primary-btn">Submit Data</button></div></form></section></div></div></main>${footer()}`;
+}
+
+window.submitOrmasRegistrationV4 = function(event){
+  event.preventDefault();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-backdrop';
+  overlay.innerHTML = `<div class="modal registration-success-v4"><div class="success-check-v4">✓</div><h2>Data ORMAS tersimpan</h2><p>Data ORMAS, Bidang Wilayah, dan Periode ORMAS telah tersimpan ke database dalam simulasi.</p><div class="modal-actions"><button class="btn" onclick="this.closest('.modal-backdrop').remove();go('#ormas-portal')">Kembali ke Menu ORMAS</button><button class="btn primary" onclick="this.closest('.modal-backdrop').remove();openOrmasLoginV4('#activity-report')">Lanjut ke Pelaporan Keaktifan</button></div></div>`;
+  document.body.appendChild(overlay);
+};
+
+portalPage = function(){
+  return `${publicHeader()}<main class="page"><div class="container"><div class="crumb">Beranda / Layanan / Pendaftaran Ormas</div><section class="portal-hero"><div><span class="pill cyan">Menu Pendaftaran ORMAS</span><h1>Pendaftaran & Pelaporan ORMAS</h1><p>Pilih layanan yang dibutuhkan. Pengguna baru wajib membuat akun sebelum mengisi Form Pendaftaran ORMAS.</p></div><button class="btn light" onclick="go('#home')">Kembali ke Beranda</button></section><div class="quick-grid portal-modules-v2"><article class="quick-card" onclick="go('#public-dashboard')"><span class="pill blue">Publik</span><h3>Dashboard Publik ORMAS</h3><p>Menampilkan ringkasan utama, tren laporan keberadaan, tren keaktifan, peta sebaran, dan direktori ORMAS.</p><button class="btn blue">Lihat Dashboard Publik</button></article><article class="quick-card registration-gated-card-v4"><span class="pill orange">Wajib Daftar Akun</span><h3>Pendaftaran ORMAS</h3><p>Buat akun Lembaga/Organisasi terlebih dahulu. Setelah masuk, lengkapi Data ORMAS, Bidang Wilayah, dan Periode ORMAS.</p><div class="card-flow-v4"><span>Daftar Akun</span><b>→</b><span>Login</span><b>→</b><span>Form ORMAS</span></div><button class="btn" onclick="event.stopPropagation();go('#registration')">Daftar Akun & Mulai</button><button class="text-link-v4" onclick="event.stopPropagation();openOrmasLoginV4('#application')">Sudah punya akun? Masuk</button></article><article class="quick-card" onclick="openOrmasLoginV4('#activity-report')"><span class="pill green">Keaktifan</span><h3>Pelaporan Keaktifan ORMAS</h3><p>ORMAS login untuk melaporkan satu kegiatan per laporan dan mengunggah maksimal tiga foto.</p><button class="btn">Login & Lapor Kegiatan</button></article></div></div></main>${footer()}`;
+};
+
+
+/* === APPLICATION PAGE FROM THE WORKING #application REFERENCE === */
+var currentOrmasTypeApplication = 'badan-hukum';
+
+function applicationSection(title, description){
+  return `<div class="form-section-title"><h3>${title}</h3><p>${description || ''}</p></div>`;
+}
+
+function applicationField(label, cls='col2', type='text', value=''){
+  return `<div class="field ${cls}"><label>${label}</label><input type="${type}" value="${value}"></div>`;
+}
+
+function applicationFile(label, cls='col2', hint='Dokumen .pdf, ukuran maks. 1Mb'){
+  return `<div class="field ${cls}"><label>${label}</label><div class="file-box"><span>📎 Pilih File</span><small>${hint}</small></div></div>`;
+}
+
+window.setApplicationOrmasType = function(type){
+  currentOrmasTypeApplication = type === 'non-badan-hukum' ? 'non-badan-hukum' : 'badan-hukum';
+  if(location.hash !== '#application') location.hash = '#application';
+  render();
+};
+
+function applicationPage(){
+  return `${publicHeader()}<main class="page"><div class="container"><div class="crumb">Beranda / Pendaftaran Ormas / Pengajuan</div><div class="app-form-layout"><aside class="stepper-card"><h3>Pengajuan Layanan Ormas</h3><p>Formulir terkait pengajuan layanan ormas.</p><button class="type-card ${currentOrmasTypeApplication==='badan-hukum'?'active':''}" onclick="setApplicationOrmasType('badan-hukum')"><b>Badan Hukum</b><span>Pelaporan keberadaan Ormas berbadan hukum</span></button><button class="type-card ${currentOrmasTypeApplication==='non-badan-hukum'?'active':''}" onclick="setApplicationOrmasType('non-badan-hukum')"><b>Non Badan Hukum</b><span>Pendaftaran organisasi dan dokumen SKT</span></button><div class="info-box"><b>Catatan</b><br>Ukuran dokumen maksimal 1Mb. Template ini hanya mockup interaktif.</div></aside><section class="form-card">${currentOrmasTypeApplication==='badan-hukum'?applicationFormBadanHukum():applicationFormNonBadanHukum()}</section></div></div></main>${footer()}`;
+}
+
+function applicationFormBadanHukum(){
+  return `<div>${applicationSection('Jenis Pengajuan','Pilihan ini membantu kami memproses permohonan Anda dengan lebih cepat dan akurat')}<div class="form-grid"><div class="field col2"><label>Jenis Pengajuan</label><select><option>Pelaporan Keberadaan Ormas</option><option>Perubahan Data</option><option>Perpanjangan/Pemutakhiran</option></select></div><div class="field col2"><label>Jenis Ormas</label><select><option>Badan Hukum</option></select></div></div>${applicationSection('A. Data Ormas','Informasi umum terkait ormas beserta atribut keanggotaan')}<div class="form-grid">${applicationField('Nama Ormas/LSM','col2','text','Jurdem')}${applicationField('Alamat Email','col2','email','jurnaldemokrasi.poldem@gmail.com')}${applicationField('Nama Ketua','col2')}${applicationField('Nama Sekretaris','col2')}${applicationField('Nama Bendahara','col2')}${applicationField('Periode Kepengurusan Mulai','col2','date')}${applicationField('Periode Kepengurusan Selesai','col2','date')}<div class="field col4"><label>Alamat Sekretariat</label><select><option>Pilih kelurahan alamat sekretariat</option></select><textarea placeholder="Masukkan detail alamat sekretariat"></textarea><small>0 / 200</small></div>${applicationField('Telepon / Fax','col2')}${applicationField('Situs Web','col2','text','https://')}</div>${applicationSection('B. Legalitas & Badan Hukum','Informasi terperinci terkait legalitas dan badan hukum ormas')}<div class="form-grid">${applicationField('No Surat Usulan','col2')}${applicationField('Tgl. Surat','col2','date')}${applicationField('Perihal Surat','col4')}${applicationField('No SK Pengesahan Badan Hukum','col2')}${applicationField('Tgl. SK Pengesahan','col2','date')}${applicationFile('SK Kemenkumham')}${applicationFile('Surat Permohonan Pelaporan Keberadaan Ormas')}${applicationFile('SK Kepengurusan Tk DKI Jakarta')}</div><div class="form-action-line"><button class="btn" onclick="go('#ormas-portal')">Kembali</button><button class="btn blue" onclick="toast('Mockup: pengajuan Badan Hukum berhasil disimpan')">Simpan Pengajuan</button></div></div>`;
+}
+
+function applicationFormNonBadanHukum(){
+  return `<div>${applicationSection('Jenis Pengajuan','Pilihan ini membantu kami memproses permohonan Anda dengan lebih cepat dan akurat')}<div class="form-grid"><div class="field col2"><label>Jenis Pengajuan</label><select><option>Pendaftaran Organisasi</option><option>Pemutakhiran Data</option><option>Perubahan Data Kepengurusan</option></select></div><div class="field col2"><label>Jenis Ormas</label><select><option>Non Badan Hukum</option></select></div></div>${applicationSection('A. Data Organisasi','Informasi umum terkait organisasi')}<div class="form-grid">${applicationField('Nama Organisasi','col2','text','Jurdem')}${applicationField('Nama Singkatan','col2')}${applicationField('Tempat Pendirian','col2')}${applicationField('Tgl. Pendirian','col2','date')}</div>${applicationSection('B. Dokumen Organisasi','Kelengkapan dokumen organisasi')}<div class="form-grid">${applicationField('No. Surat Permohonan','col2')}${applicationField('Tgl. Surat Permohonan','col2','date')}${applicationFile('Scan Surat Permohonan')}${applicationField('Nama Notaris','col2')}${applicationField('No. Akta Notaris','col2')}${applicationField('Tgl. Akta','col2','date')}${applicationFile('Scan Akta Notaris')}${applicationField('Nama Bank','col2')}${applicationField('Rekening Bank','col2')}${applicationField('NPWP','col2','text','##.###.###.#-###.###')}${applicationFile('Scan NPWP')}</div>${applicationSection('C. Atribut Organisasi','Keterangan detail terkait organisasi')}<div class="form-grid">${applicationField('Bidang Kegiatan','col2')}${applicationField('Keputusan Tertinggi Organisasi','col2')}${applicationField('Usaha Organisasi','col2')}${applicationField('Sumber Keuangan','col2')}<div class="field col2"><label>Program Kerja Organisasi</label><textarea></textarea></div>${applicationFile('Scan Program Kerja Organisasi')}<div class="field col4"><label>Asas Ciri Organisasi</label><textarea></textarea></div><div class="field col4"><label>Tujuan Organisasi</label><textarea></textarea></div><div class="field col2"><label>Unit Cabang Organisasi</label><input placeholder="Pisahkan dengan koma, bila lebih dari satu"></div><div class="field col2"><label>Lokasi Unit Cabang Organisasi</label><input placeholder="Pisahkan dengan koma, bila lebih dari satu"></div></div>${applicationSection('D. Data Sekretariat','Informasi sekretariat & atribut organisasi')}<div class="form-grid">${applicationField('Email','col2','email','jurnaldemokrasi.poldem@gmail.com')}${applicationField('Telepon / Fax','col2')}${applicationField('Website','col2','text','https://')}<div class="field col4"><label>Alamat Sekretariat</label><select><option>Pilih kelurahan alamat sekretariat</option></select><textarea placeholder="Masukkan detail alamat sekretariat"></textarea><small>0 / 200</small></div>${applicationFile('Surat Keterangan Domisili Sekretariat Organisasi')}${applicationFile('Bukti Kepemilikan / Sewa Kontrak Kantor')}${applicationFile('Lambang / Logo Organisasi','col2','Dokumen gambar, ukuran maks. 1Mb')}${applicationFile('Bendera Organisasi','col2','Dokumen gambar, ukuran maks. 1Mb')}${applicationFile('Foto Kantor Sekretariat (Tampak depan)','col2','Dokumen gambar, ukuran maks. 1Mb')}</div>${applicationSection('E. Data Rekomendasi','Kelengkapan Dokumen Rekomendasi Pihak Berwenang')}<div class="form-grid">${applicationFile('Surat Pernyataan sesuai Permendagri No. 57 Tahun 2017')}${applicationFile('Rekomendasi Kementerian Agama')}${applicationFile('Rekomendasi Kementerian dan PD Budaya')}${applicationFile('Surat Pernyataan Persetujuan Pejabat')}</div>${applicationSection('F. Daftar Kepemimpinan dan Keanggotaan','Informasi Dewan Pimpinan dan Anggota Organisasi')}<div class="notice">Belum ada data personil. Silakan masukkan data personil terlebih dahulu.</div><div class="form-grid">${applicationField('Periode Kepengurusan Mulai','col2','date')}${applicationField('Periode Kepengurusan Selesai','col2','date')}${applicationFile('SK Kepengurusan','col2')}</div>${applicationPersonilForm()}<div class="form-action-line"><button class="btn" onclick="go('#ormas-portal')">Kembali</button><button class="btn blue" onclick="toast('Mockup: pengajuan Non Badan Hukum berhasil disimpan')">Simpan Pengajuan</button></div></div>`;
+}
+
+function applicationPersonilForm(){
+  return `${applicationSection('Pendaftaran Personil','Lengkapi data diri personil yang ingin didaftarkan')}<div class="form-grid">${applicationField('Jabatan','col2')}${applicationField('Nama Lengkap','col2')}${applicationField('NIK','col2')}${applicationField('Agama','col2')}${applicationField('Kewarganegaraan','col2')}<div class="field col2"><label>Jenis Kelamin</label><select><option>Laki-laki</option><option>Perempuan</option></select></div><div class="field col4"><label>Alamat</label><textarea></textarea></div>${applicationField('Tempat Lahir','col2')}${applicationField('Tgl. Lahir','col2','date')}${applicationField('Status Perkawinan','col2')}${applicationField('Pekerjaan','col2')}${applicationField('No Telepon Seluler','col2')}${applicationFile('KTP','col2','Dokumen gambar, ukuran maks. 1Mb')}${applicationFile('Pas Foto 4x6 (terbaru)','col2','Dokumen gambar, ukuran maks. 1Mb')}${applicationFile('Daftar Riwayat Hidup','col2','Dokumen .pdf, ukuran maks. 1Mb')}</div><button class="btn" style="margin-top:12px" onclick="toast('Mockup: personil ditambahkan ke daftar')">+ Tambah Personil</button>`;
+}
+
+// Final route mapping: registration login must continue to the existing #application page.
+render = function(){
+  const route = location.hash || '#home';
+  if(route === '#home') app.innerHTML = homePage();
+  else if(route === '#ormas-portal') app.innerHTML = portalPage();
+  else if(route === '#public-dashboard') app.innerHTML = publicDashboard();
+  else if(route === '#registration') app.innerHTML = registrationPage();
+  else if(route === '#ormas-login') app.innerHTML = loginPage();
+  else if(route === '#application') app.innerHTML = applicationPage();
+  else if(route === '#ormas-registration-form') app.innerHTML = ormasRegistrationFormPageV4();
+  else if(route === '#activity-report') app.innerHTML = activityReportPage();
+  else if(route === '#admin-dashboard') app.innerHTML = adminDashboard();
+  else if(route === '#admin-reports') app.innerHTML = adminReportsPage();
+  else if(route === '#admin-report-detail') app.innerHTML = adminReportDetail();
+  else app.innerHTML = homePage();
+  window.scrollTo(0,0);
+  if(route === '#public-dashboard') setTimeout(()=>{renderPublicDirectoryV2();updateRegionDetailV2(publicDirectoryStateV2.region);},0);
+};
+
 setTimeout(render, 0);
+
+/* === FINAL PATCH V6: Admin Dashboard disinkronkan dengan alur frontend ===
+   Frontend: Pendaftaran akun -> Login -> Pengajuan ORMAS (#application)
+             Login -> Pelaporan Keaktifan (#activity-report)
+   Admin:    Monitoring Pendaftaran ORMAS + Monitoring Pelaporan Keaktifan
+*/
+
+let applicationRequestsV6 = [
+  {
+    id: 'ORM-2026-0712',
+    date: '2026-07-12',
+    org: 'Jurnal Demokrasi',
+    orgType: 'Badan Hukum',
+    requestType: 'Pelaporan Keberadaan Ormas',
+    email: 'jurnaldemokrasi.poldem@gmail.com',
+    chair: 'Hendra Irawan',
+    secretary: 'Rina Kurniawati',
+    treasurer: 'Dedi Saputra',
+    address: 'Gambir, Jakarta Pusat',
+    region: 'Jakarta Pusat',
+    periodStart: '2025-01-01',
+    periodEnd: '2030-12-31',
+    documents: ['SK Kemenkumham', 'Surat Permohonan Pelaporan Keberadaan Ormas', 'SK Kepengurusan Tk DKI Jakarta'],
+    status: 'Menunggu Verifikasi',
+    rejectionReason: ''
+  },
+  {
+    id: 'ORM-2026-0709',
+    date: '2026-07-09',
+    org: 'Forum Pemuda Betawi Bersatu',
+    orgType: 'Non Badan Hukum / SKT',
+    requestType: 'Pendaftaran Organisasi',
+    email: 'sekretariat@fpbb.or.id',
+    chair: 'Muhammad Fikri',
+    secretary: 'Siti Nurjanah',
+    treasurer: 'Andri Maulana',
+    address: 'Cengkareng, Jakarta Barat',
+    region: 'Jakarta Barat',
+    periodStart: '2024-01-01',
+    periodEnd: '2029-12-31',
+    documents: ['Surat Permohonan', 'Akta Notaris', 'NPWP', 'Program Kerja', 'Surat Domisili', 'SK Kepengurusan'],
+    status: 'Disetujui',
+    rejectionReason: ''
+  },
+  {
+    id: 'ORM-2026-0706',
+    date: '2026-07-06',
+    org: 'Yayasan Peduli Pendidikan Anak Bangsa',
+    orgType: 'Non Badan Hukum / SKT',
+    requestType: 'Pemutakhiran Data',
+    email: 'kontak@yppa.or.id',
+    chair: 'Nur Aisyah',
+    secretary: 'Rudi Hartono',
+    treasurer: 'Dian Lestari',
+    address: 'Pasar Minggu, Jakarta Selatan',
+    region: 'Jakarta Selatan',
+    periodStart: '2023-06-01',
+    periodEnd: '2028-05-31',
+    documents: ['Surat Permohonan', 'SK Kepengurusan', 'Program Kerja'],
+    status: 'Perlu Perbaikan',
+    rejectionReason: 'Mohon melengkapi dokumen domisili sekretariat terbaru.'
+  }
+];
+
+let selectedApplicationIdV6 = applicationRequestsV6[0].id;
+const applicationPageBeforeAdminSyncV6 = applicationPage;
+
+function getApplicationFieldValueV6(labelText) {
+  const labels = [...document.querySelectorAll('.form-card label')];
+  const label = labels.find(item => item.textContent.trim() === labelText);
+  const control = label?.closest('.field')?.querySelector('input, select, textarea');
+  return control?.value?.trim() || '';
+}
+
+function inferRegionV6(address) {
+  return regionData.find(item => address.includes(item.name))?.name || 'Jakarta Pusat';
+}
+
+window.submitApplicationV6 = function (orgType) {
+  const isLegal = orgType === 'Badan Hukum';
+  const orgName = getApplicationFieldValueV6(isLegal ? 'Nama Ormas/LSM' : 'Nama Organisasi') || `ORMAS Baru ${applicationRequestsV6.length + 1}`;
+  const email = getApplicationFieldValueV6(isLegal ? 'Alamat Email' : 'Email') || 'ormas@example.org';
+  const address = getApplicationFieldValueV6('Alamat Sekretariat') || 'Alamat sekretariat belum dilengkapi';
+  const requestType = getApplicationFieldValueV6('Jenis Pengajuan') || (isLegal ? 'Pelaporan Keberadaan Ormas' : 'Pendaftaran Organisasi');
+  const periodStart = getApplicationFieldValueV6('Periode Kepengurusan Mulai');
+  const periodEnd = getApplicationFieldValueV6('Periode Kepengurusan Selesai');
+  const request = {
+    id: `ORM-2026-${String(applicationRequestsV6.length + 713).padStart(4, '0')}`,
+    date: new Date().toISOString().slice(0, 10),
+    org: orgName,
+    orgType: isLegal ? 'Badan Hukum' : 'Non Badan Hukum / SKT',
+    requestType,
+    email,
+    chair: getApplicationFieldValueV6('Nama Ketua') || 'Belum diisi',
+    secretary: getApplicationFieldValueV6('Nama Sekretaris') || 'Belum diisi',
+    treasurer: getApplicationFieldValueV6('Nama Bendahara') || 'Belum diisi',
+    address,
+    region: inferRegionV6(address),
+    periodStart,
+    periodEnd,
+    documents: isLegal
+      ? ['SK Kemenkumham', 'Surat Permohonan Pelaporan Keberadaan Ormas', 'SK Kepengurusan Tk DKI Jakarta']
+      : ['Surat Permohonan', 'Akta Notaris', 'NPWP', 'Program Kerja', 'Dokumen Sekretariat', 'SK Kepengurusan'],
+    status: 'Menunggu Verifikasi',
+    rejectionReason: ''
+  };
+  applicationRequestsV6.unshift(request);
+  selectedApplicationIdV6 = request.id;
+  toast(`Pengajuan ${orgName} masuk ke Monitoring Pendaftaran ORMAS.`);
+};
+
+applicationPage = function () {
+  return applicationPageBeforeAdminSyncV6()
+    .replace("onclick=\"toast('Mockup: pengajuan Badan Hukum berhasil disimpan')\"", "onclick=\"submitApplicationV6('Badan Hukum')\"")
+    .replace("onclick=\"toast('Mockup: pengajuan Non Badan Hukum berhasil disimpan')\"", "onclick=\"submitApplicationV6('Non Badan Hukum')\"")
+    .replace('<section class="form-card">', '<section class="form-card"><div class="sync-process-banner-v6"><b>Terhubung ke Dashboard Admin</b><span>Setelah disimpan, pengajuan tampil pada menu <em>Monitoring Pendaftaran ORMAS</em> dengan status Menunggu Verifikasi.</span></div>');
+};
+
+// Pelaporan keaktifan juga menyimpan identitas ORMAS terpilih agar data admin sama dengan frontend.
+window.submitActivity = function (event) {
+  event.preventDefault();
+  const files = $('#activityPhotos').files;
+  if (files.length > 3) {
+    toast('Foto maksimal 3 file.');
+    return;
+  }
+  const selectedOrgId = $('#activityOrgV5').value;
+  const selectedOrg = linkedOrmasAccountsV5.find(item => item.id === selectedOrgId);
+  if (!selectedOrg) {
+    toast('Pilih ORMAS yang akan melaporkan kegiatan.');
+    return;
+  }
+  const report = {
+    id: `AKT-2026-${String(activityReports.length + 100).padStart(4, '0')}`,
+    org: selectedOrg.name,
+    orgShortName: selectedOrg.shortName,
+    orgType: selectedOrg.type,
+    orgRegion: selectedOrg.region,
+    activity: $('#activityName').value,
+    date: $('#activityDate').value,
+    field: $('#activityField').value,
+    description: $('#activityDescription').value,
+    photos: files.length,
+    status: 'Menunggu Verifikasi',
+    rejectionReason: ''
+  };
+  activityReports.unshift(report);
+  selectedActivityId = report.id;
+  event.target.reset();
+  setTimeout(() => updateActivityOrmasV5(linkedOrmasAccountsV5[0].id), 0);
+  toast(`Laporan ${selectedOrg.name} masuk ke Monitoring Pelaporan Keaktifan.`);
+};
+
+function dateLabelV6(value) {
+  if (!value) return '-';
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function registrationStatusBadgeV6(status) {
+  const cls = status === 'Disetujui' ? 'green' : status === 'Ditolak' ? 'red' : status === 'Perlu Perbaikan' ? 'orange' : 'blue';
+  return `<span class="pill ${cls}">${status}</span>`;
+}
+
+function applicationRowsV6(items = applicationRequestsV6) {
+  return items.map(item => `<tr>
+    <td><a class="click-link" onclick="openAdminApplicationV6('${item.id}')">${item.id}</a></td>
+    <td>${dateLabelV6(item.date)}</td>
+    <td><b>${item.org}</b><br><small>${item.email}</small></td>
+    <td>${item.orgType}</td>
+    <td>${item.requestType}</td>
+    <td>${item.region}</td>
+    <td>${registrationStatusBadgeV6(item.status)}</td>
+    <td><span class="photo-count">📎 ${item.documents.length} dokumen</span></td>
+    <td><button class="btn tiny" onclick="openAdminApplicationV6('${item.id}')">Periksa</button></td>
+  </tr>`).join('');
+}
+
+window.openAdminApplicationV6 = function (id) {
+  selectedApplicationIdV6 = id;
+  go('#admin-application-detail');
+};
+
+function adminApplicationRowsNeedingActionV6() {
+  const items = applicationRequestsV6.filter(item => item.status !== 'Disetujui');
+  return items.length ? applicationRowsV6(items) : '<tr><td colspan="9" class="empty-state-v6">Tidak ada pengajuan yang perlu ditindaklanjuti.</td></tr>';
+}
+
+function adminActivityRowsSyncedV6(items = activityReports) {
+  return items.map(report => `<tr>
+    <td><a class="click-link" onclick="openAdminReport('${report.id}')">${report.id}</a></td>
+    <td>${dateLabelV6(report.date)}</td>
+    <td><b>${report.org}</b><br><small>${report.orgType || 'Profil ORMAS terverifikasi'}</small></td>
+    <td><b>${report.activity}</b><br><small>${report.description}</small></td>
+    <td>${report.field}</td>
+    <td>${report.orgRegion || '-'}</td>
+    <td><span class="photo-count">📷 ${report.photos} foto</span></td>
+    <td>${statusBadge(report.status)}</td>
+    <td><button class="btn tiny" onclick="openAdminReport('${report.id}')">Verifikasi</button></td>
+  </tr>`).join('');
+}
+
+function adminShell(content, active = 'dashboard') {
+  const titles = {
+    dashboard: ['Dashboard Pegawai', 'Ringkasan monitoring pendaftaran dan keaktifan ORMAS'],
+    applications: ['Monitoring Pendaftaran', 'Pengajuan ORMAS Badan Hukum dan Non Badan Hukum dari frontend'],
+    reports: ['Monitoring Keaktifan', 'Laporan kegiatan ORMAS yang dikirim dari frontend'],
+    directory: ['Direktori ORMAS', 'Data publik ORMAS yang telah disetujui']
+  };
+  const [title, subtitle] = titles[active] || titles.dashboard;
+  return `<div class="app-shell">
+    <aside class="sidebar">
+      <div class="side-brand">${logoHtml()}</div>
+      <nav class="side-nav">
+        <span class="side-nav-label">MENU PEGAWAI</span>
+        <a class="${active === 'dashboard' ? 'active' : ''}" href="#admin-dashboard">Dashboard Pegawai</a>
+        <a class="${active === 'applications' ? 'active' : ''}" href="#admin-applications">Monitoring Pendaftaran</a>
+        <a class="${active === 'reports' ? 'active' : ''}" href="#admin-reports">Monitoring Keaktifan</a>
+        <div class="side-nav-divider"></div>
+        <span class="side-nav-label">TAUTAN LAIN</span>
+        <a href="#admin-directory">Direktori ORMAS</a>
+        <a href="#public-dashboard">Dashboard Publik</a>
+        <a href="#home">Halaman Depan</a>
+      </nav>
+      <div class="side-user"><b>Administrator</b><small>BAKESBANGPOL DKI Jakarta</small></div>
+    </aside>
+    <section class="admin-content">
+      <header class="admin-topbar"><div><h1>${title}</h1><p>${subtitle}</p></div><button class="btn" onclick="go('#home')">Logout</button></header>
+      <main class="admin-main">${content}</main>
+    </section>
+  </div>`;
+}
+
+function adminDashboard() {
+  const pendingApplications = applicationRequestsV6.filter(item => item.status === 'Menunggu Verifikasi').length;
+  const legalApplications = applicationRequestsV6.filter(item => item.orgType === 'Badan Hukum').length;
+  const nonLegalApplications = applicationRequestsV6.filter(item => item.orgType.includes('Non Badan')).length;
+  const waitingActivities = activityReports.filter(item => item.status === 'Menunggu Verifikasi').length;
+  const approvedActivities = activityReports.filter(item => item.status === 'Disetujui').length;
+  const activeOrganizations = publicDirectory.filter(item => approvedWithinOneYear(item.name) || item.status === 'Aktif').length;
+  const content = `<div class="sync-overview-v6">
+      <div><span class="pill cyan">Dashboard Pegawai</span><h2>Monitoring Pendaftaran dan Keaktifan ORMAS</h2><p>Data pada dashboard ini berasal dari dua layanan yang terlihat oleh pengguna: <b>Pengajuan Layanan ORMAS</b> dan <b>Pelaporan Keaktifan ORMAS</b>.</p></div>
+      <div class="sync-flow-v6"><span>Frontend</span><b>→</b><span>Database</span><b>→</b><span>Dashboard Admin</span></div>
+    </div>
+    <div class="kpi-grid admin-kpis synced-kpis-v6">
+      ${kpi('Total Pengajuan ORMAS', applicationRequestsV6.length, 'Badan Hukum & Non Badan Hukum', 'blue', '🏢')}
+      ${kpi('Menunggu Verifikasi', pendingApplications, 'Pengajuan pendaftaran', 'yellow', '⏳')}
+      ${kpi('Badan Hukum', legalApplications, 'Pengajuan pada frontend', 'green', '✓')}
+      ${kpi('Non Badan Hukum / SKT', nonLegalApplications, 'Pengajuan pada frontend', 'blue', '📄')}
+      ${kpi('Laporan Keaktifan', activityReports.length, `${waitingActivities} menunggu verifikasi`, 'green', '📷')}
+      ${kpi('ORMAS Aktif', activeOrganizations, `${approvedActivities} laporan kegiatan disetujui`, 'green', '●')}
+    </div>
+    <div class="admin-sync-grid-v6">
+      <article class="panel"><div class="panel-head"><div><h3>Tren Pendaftaran ORMAS</h3><p class="muted">Pengajuan dari halaman #application.</p></div><button class="outline-btn" onclick="go('#admin-applications')">Lihat Pendaftaran</button></div>${verticalBars([{month:'Jan',total:18},{month:'Feb',total:24},{month:'Mar',total:31},{month:'Apr',total:29},{month:'Mei',total:38},{month:'Jun',total:44},{month:'Jul',total:applicationRequestsV6.length + 42}])}</article>
+      <article class="panel"><div class="panel-head"><div><h3>Tren Pelaporan Keaktifan</h3><p class="muted">Laporan dari ORMAS yang dipilih pada frontend.</p></div><button class="outline-btn" onclick="go('#admin-reports')">Lihat Keaktifan</button></div>${verticalBars(monthlyReports)}</article>
+    </div>
+    <div class="admin-sync-grid-v6">
+      <article class="panel"><h3>Komposisi Jenis ORMAS</h3>${horizontalBars([{name:'Badan Hukum',total:legalApplications},{name:'Non Badan Hukum / SKT',total:nonLegalApplications}])}</article>
+      <article class="panel"><h3>Status Operasional</h3>${horizontalBars([{name:'Pendaftaran Menunggu',total:pendingApplications},{name:'Keaktifan Menunggu',total:waitingActivities},{name:'Keaktifan Disetujui',total:approvedActivities}])}</article>
+    </div>
+    <article class="panel table-panel"><div class="panel-head"><div><h3>Pendaftaran ORMAS Perlu Ditindaklanjuti</h3><p class="muted">Sama dengan data yang dikirim melalui Pengajuan Layanan ORMAS.</p></div><button class="outline-btn" onclick="go('#admin-applications')">Lihat Semua</button></div><div class="table-scroll"><table><thead><tr><th>No. Pengajuan</th><th>Tanggal</th><th>Nama ORMAS</th><th>Jenis ORMAS</th><th>Jenis Pengajuan</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>Aksi</th></tr></thead><tbody>${adminApplicationRowsNeedingActionV6()}</tbody></table></div></article>
+    <article class="panel table-panel"><div class="panel-head"><div><h3>Pelaporan Keaktifan Perlu Ditindaklanjuti</h3><p class="muted">Sama dengan data pada form Pelaporan Keaktifan ORMAS.</p></div><button class="outline-btn" onclick="go('#admin-reports')">Lihat Semua</button></div><div class="table-scroll"><table><thead><tr><th>No. Laporan</th><th>Tanggal</th><th>ORMAS Pelapor</th><th>Kegiatan</th><th>Bidang</th><th>Wilayah</th><th>Foto</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${adminActivityRowsSyncedV6(activityReports.filter(item => item.status === 'Menunggu Verifikasi'))}</tbody></table></div></article>`;
+  return adminShell(content, 'dashboard');
+}
+
+function adminApplicationsPageV6() {
+  const content = `<article class="panel table-panel">
+    <div class="panel-head"><div><h3>Daftar Pengajuan Layanan ORMAS</h3><p class="muted">Menampilkan pengajuan Badan Hukum dan Non Badan Hukum dari halaman #application.</p></div><button class="outline-btn" onclick="toast('Simulasi export data pendaftaran')">Export Excel</button></div>
+    <div class="admin-filter-row application-filter-v6">
+      <label>Pencarian<input id="adminApplicationSearchV6" placeholder="Nama ORMAS / nomor pengajuan" oninput="renderAdminApplicationsV6()"></label>
+      <label>Jenis ORMAS<select id="adminApplicationTypeV6" onchange="renderAdminApplicationsV6()"><option value="">Semua Jenis</option><option>Badan Hukum</option><option>Non Badan Hukum / SKT</option></select></label>
+      <label>Status<select id="adminApplicationStatusV6" onchange="renderAdminApplicationsV6()"><option value="">Semua Status</option><option>Menunggu Verifikasi</option><option>Perlu Perbaikan</option><option>Disetujui</option><option>Ditolak</option></select></label>
+    </div>
+    <div class="table-scroll"><table><thead><tr><th>No. Pengajuan</th><th>Tanggal</th><th>Nama ORMAS</th><th>Jenis ORMAS</th><th>Jenis Pengajuan</th><th>Wilayah</th><th>Status</th><th>Dokumen</th><th>Aksi</th></tr></thead><tbody id="adminApplicationsBodyV6">${applicationRowsV6()}</tbody></table></div>
+  </article>`;
+  return adminShell(content, 'applications');
+}
+
+window.renderAdminApplicationsV6 = function () {
+  const q = ($('#adminApplicationSearchV6')?.value || '').toLowerCase();
+  const type = $('#adminApplicationTypeV6')?.value || '';
+  const status = $('#adminApplicationStatusV6')?.value || '';
+  const items = applicationRequestsV6.filter(item =>
+    (!q || `${item.id} ${item.org}`.toLowerCase().includes(q)) &&
+    (!type || item.orgType === type) &&
+    (!status || item.status === status)
+  );
+  const body = $('#adminApplicationsBodyV6');
+  if (body) body.innerHTML = items.length ? applicationRowsV6(items) : '<tr><td colspan="9" class="empty-state-v6">Data tidak ditemukan.</td></tr>';
+};
+
+function applicationDocumentRowsV6(item) {
+  return item.documents.map((documentName, index) => `<tr><td>📎 ${documentName}</td><td>${index === item.documents.length - 1 && item.status === 'Perlu Perbaikan' ? registrationStatusBadgeV6('Perlu Perbaikan') : '<span class="pill green">Terunggah</span>'}</td><td><button class="btn tiny" onclick="toast('Simulasi membuka dokumen')">Lihat</button></td></tr>`).join('');
+}
+
+function adminApplicationDetailV6() {
+  const item = applicationRequestsV6.find(entry => entry.id === selectedApplicationIdV6) || applicationRequestsV6[0];
+  const content = `<div class="preview-detail">
+    <section class="panel">
+      <div class="panel-head"><div><h2>Detail Pengajuan ORMAS</h2><p class="muted">${item.id} • ${item.requestType}</p></div>${registrationStatusBadgeV6(item.status)}</div>
+      <div class="detail-grid application-detail-grid-v6">
+        <div><small>Nama ORMAS</small><b>${item.org}</b></div>
+        <div><small>Jenis ORMAS</small><b>${item.orgType}</b></div>
+        <div><small>Email Organisasi</small><b>${item.email}</b></div>
+        <div><small>Wilayah</small><b>${item.region}</b></div>
+        <div><small>Ketua</small><b>${item.chair}</b></div>
+        <div><small>Sekretaris</small><b>${item.secretary}</b></div>
+        <div><small>Bendahara</small><b>${item.treasurer}</b></div>
+        <div><small>Periode</small><b>${dateLabelV6(item.periodStart)} s.d. ${dateLabelV6(item.periodEnd)}</b></div>
+      </div>
+      <h3>Alamat Sekretariat</h3><p>${item.address}</p>
+      <h3>Dokumen Sesuai Form Frontend</h3>
+      <div class="table-scroll"><table><thead><tr><th>Dokumen</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${applicationDocumentRowsV6(item)}</tbody></table></div>
+      ${item.rejectionReason ? `<div class="notice"><b>Catatan Perbaikan/Penolakan:</b> ${item.rejectionReason}</div>` : ''}
+    </section>
+    <aside class="panel verification-panel">
+      <h3>Verifikasi Pendaftaran</h3>
+      <p class="muted">Keputusan ini hanya untuk pengajuan ORMAS. Pelaporan keaktifan diproses pada menu terpisah.</p>
+      <label>Catatan Perbaikan / Alasan Penolakan</label>
+      <textarea id="applicationReasonV6" class="note-area" placeholder="Diisi jika perlu perbaikan atau ditolak">${item.rejectionReason || ''}</textarea>
+      <button class="btn success full-button" onclick="approveApplicationV6('${item.id}')">Setujui Pengajuan</button>
+      <button class="btn full-button" onclick="requestApplicationCorrectionV6('${item.id}')">Minta Perbaikan</button>
+      <button class="btn danger full-button" onclick="rejectApplicationV6('${item.id}')">Tolak</button>
+      <button class="outline-btn full-button" onclick="go('#admin-applications')">Kembali ke Daftar</button>
+    </aside>
+  </div>`;
+  return adminShell(content, 'applications');
+}
+
+window.approveApplicationV6 = function (id) {
+  const item = applicationRequestsV6.find(entry => entry.id === id);
+  if (!item) return;
+  item.status = 'Disetujui';
+  item.rejectionReason = '';
+  if (!publicDirectory.some(entry => entry.name === item.org)) {
+    publicDirectory.unshift({
+      name: item.org,
+      chair: item.chair,
+      address: item.address,
+      field: item.requestType,
+      region: item.region,
+      status: 'Aktif'
+    });
+  }
+  toast('Pengajuan disetujui dan ORMAS masuk ke Direktori ORMAS.');
+  render();
+};
+
+window.requestApplicationCorrectionV6 = function (id) {
+  const reason = $('#applicationReasonV6')?.value.trim();
+  if (!reason) return toast('Catatan perbaikan wajib diisi.');
+  const item = applicationRequestsV6.find(entry => entry.id === id);
+  if (!item) return;
+  item.status = 'Perlu Perbaikan';
+  item.rejectionReason = reason;
+  toast('Catatan perbaikan tersimpan dan dapat dilihat pemohon.');
+  render();
+};
+
+window.rejectApplicationV6 = function (id) {
+  const reason = $('#applicationReasonV6')?.value.trim();
+  if (!reason) return toast('Alasan penolakan wajib diisi.');
+  const item = applicationRequestsV6.find(entry => entry.id === id);
+  if (!item) return;
+  item.status = 'Ditolak';
+  item.rejectionReason = reason;
+  toast('Pengajuan ORMAS ditolak.');
+  render();
+};
+
+function adminReportsPage() {
+  const content = `<article class="panel table-panel">
+    <div class="panel-head"><div><h3>Daftar Pelaporan Keaktifan ORMAS</h3><p class="muted">Kolom dan data sama dengan form frontend: ORMAS pelapor, nama kegiatan, tanggal, bidang, keterangan, foto, dan status.</p></div><button class="outline-btn" onclick="toast('Simulasi export laporan keaktifan')">Export Excel</button></div>
+    <div class="admin-filter-row activity-filter-v6">
+      <label>Pencarian<input id="adminActivitySearchV6" placeholder="Nama ORMAS / kegiatan" oninput="renderAdminActivitiesV6()"></label>
+      <label>Status<select id="adminActivityStatusV6" onchange="renderAdminActivitiesV6()"><option value="">Semua Status</option><option>Menunggu Verifikasi</option><option>Disetujui</option><option>Ditolak</option></select></label>
+      <label>Bidang<select id="adminActivityFieldV6" onchange="renderAdminActivitiesV6()"><option value="">Semua Bidang</option>${fieldData.map(item => `<option>${item.name}</option>`).join('')}</select></label>
+    </div>
+    <div class="table-scroll"><table><thead><tr><th>No. Laporan</th><th>Tanggal</th><th>ORMAS Pelapor</th><th>Kegiatan</th><th>Bidang</th><th>Wilayah</th><th>Foto</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="adminActivityBodyV6">${adminActivityRowsSyncedV6()}</tbody></table></div>
+  </article>`;
+  return adminShell(content, 'reports');
+}
+
+window.renderAdminActivitiesV6 = function () {
+  const q = ($('#adminActivitySearchV6')?.value || '').toLowerCase();
+  const status = $('#adminActivityStatusV6')?.value || '';
+  const field = $('#adminActivityFieldV6')?.value || '';
+  const items = activityReports.filter(item =>
+    (!q || `${item.id} ${item.org} ${item.activity}`.toLowerCase().includes(q)) &&
+    (!status || item.status === status) &&
+    (!field || item.field === field)
+  );
+  const body = $('#adminActivityBodyV6');
+  if (body) body.innerHTML = items.length ? adminActivityRowsSyncedV6(items) : '<tr><td colspan="9" class="empty-state-v6">Data tidak ditemukan.</td></tr>';
+};
+
+function adminReportDetail() {
+  const report = activityReports.find(item => item.id === selectedActivityId) || activityReports[0];
+  const content = `<div class="preview-detail">
+    <section class="panel">
+      <div class="panel-head"><div><h2>Verifikasi Pelaporan Keaktifan</h2><p class="muted">${report.id} • Data dari form frontend</p></div>${statusBadge(report.status)}</div>
+      <div class="detail-grid application-detail-grid-v6">
+        <div><small>ORMAS Pelapor</small><b>${report.org}</b></div>
+        <div><small>Jenis ORMAS</small><b>${report.orgType || 'Profil terverifikasi'}</b></div>
+        <div><small>Wilayah Sekretariat</small><b>${report.orgRegion || '-'}</b></div>
+        <div><small>Nama Kegiatan</small><b>${report.activity}</b></div>
+        <div><small>Tanggal Kegiatan</small><b>${dateLabelV6(report.date)}</b></div>
+        <div><small>Bidang Kegiatan</small><b>${report.field}</b></div>
+      </div>
+      <h3>Keterangan</h3><p>${report.description}</p>
+      <h3>Foto Kegiatan</h3>
+      <div class="photo-preview-grid">${Array.from({ length: report.photos }, (_, index) => `<div class="photo-placeholder">📷<span>Foto ${index + 1}</span></div>`).join('')}</div>
+      ${report.rejectionReason ? `<div class="notice"><b>Alasan Penolakan:</b> ${report.rejectionReason}</div>` : ''}
+    </section>
+    <aside class="panel verification-panel">
+      <h3>Keputusan Verifikasi Keaktifan</h3>
+      <p class="muted">Setuju memperbarui status keaktifan. Tolak wajib disertai alasan. Proses ini tidak mengubah status pendaftaran ORMAS.</p>
+      <label>Alasan Penolakan</label>
+      <textarea id="rejectionReason" class="note-area" placeholder="Diisi jika laporan ditolak">${report.rejectionReason || ''}</textarea>
+      <button class="btn success full-button" onclick="approveReport('${report.id}')">Setujui Laporan</button>
+      <button class="btn danger full-button" onclick="rejectReport('${report.id}')">Tolak Laporan</button>
+      <button class="outline-btn full-button" onclick="go('#admin-reports')">Kembali ke Daftar</button>
+    </aside>
+  </div>`;
+  return adminShell(content, 'reports');
+}
+
+function adminDirectoryV6() {
+  const content = `<article class="panel table-panel">
+    <div class="panel-head"><div><h3>Direktori ORMAS yang Tampil di Dashboard Publik</h3><p class="muted">Data ORMAS yang telah disetujui dan aman dipublikasikan.</p></div><button class="outline-btn" onclick="go('#public-dashboard')">Pratinjau Publik</button></div>
+    <div class="table-scroll"><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Nama Ketua</th><th>Wilayah</th><th>Alamat</th><th>Bidang</th><th>Status Keaktifan</th></tr></thead><tbody>${publicDirectoryRows()}</tbody></table></div>
+  </article>`;
+  return adminShell(content, 'directory');
+}
+
+render = function () {
+  const route = location.hash || '#home';
+  if (route === '#home') app.innerHTML = homePage();
+  else if (route === '#ormas-portal') app.innerHTML = portalPage();
+  else if (route === '#public-dashboard') app.innerHTML = publicDashboard();
+  else if (route === '#registration') app.innerHTML = registrationPage();
+  else if (route === '#ormas-login') app.innerHTML = loginPage();
+  else if (route === '#application') app.innerHTML = applicationPage();
+  else if (route === '#ormas-registration-form') app.innerHTML = ormasRegistrationFormPageV4();
+  else if (route === '#activity-report') app.innerHTML = activityReportPage();
+  else if (route === '#admin-dashboard') app.innerHTML = adminDashboard();
+  else if (route === '#admin-applications') app.innerHTML = adminApplicationsPageV6();
+  else if (route === '#admin-application-detail') app.innerHTML = adminApplicationDetailV6();
+  else if (route === '#admin-reports') app.innerHTML = adminReportsPage();
+  else if (route === '#admin-report-detail') app.innerHTML = adminReportDetail();
+  else if (route === '#admin-directory') app.innerHTML = adminDirectoryV6();
+  else app.innerHTML = homePage();
+  window.scrollTo(0, 0);
+  if (route === '#public-dashboard') setTimeout(() => { renderPublicDirectoryV2(); updateRegionDetailV2(publicDirectoryStateV2.region); }, 0);
+};
+
+window.addEventListener('hashchange', () => setTimeout(render, 0));
+setTimeout(render, 0);
+
+/* Small alignment fix for Admin Direktori column order */
+function adminDirectoryRowsV6() {
+  return publicDirectory.map((item, index) => `<tr>
+    <td>${index + 1}</td>
+    <td><b>${item.name}</b></td>
+    <td>${item.chair}</td>
+    <td>${item.region}</td>
+    <td>${item.address}</td>
+    <td>${item.field}</td>
+    <td>${statusBadge(item.status)}</td>
+  </tr>`).join('');
+}
+
+function adminDirectoryV6() {
+  const content = `<article class="panel table-panel">
+    <div class="panel-head"><div><h3>Direktori ORMAS yang Tampil di Dashboard Publik</h3><p class="muted">Data ORMAS yang telah disetujui dan aman dipublikasikan.</p></div><button class="outline-btn" onclick="go('#public-dashboard')">Pratinjau Publik</button></div>
+    <div class="table-scroll"><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Nama Ketua</th><th>Wilayah</th><th>Alamat</th><th>Bidang</th><th>Status Keaktifan</th></tr></thead><tbody>${adminDirectoryRowsV6()}</tbody></table></div>
+  </article>`;
+  return adminShell(content, 'directory');
+}
+
+/* === FINAL PATCH V7: Dashboard sebagai pusat kerja + detail profil ORMAS === */
+let selectedAdminOrmasNameV7 = publicDirectory[0]?.name || 'Jurnal Demokrasi';
+let selectedPublicOrmasNameV7 = publicDirectory[0]?.name || 'Jurnal Demokrasi';
+
+const adminOrmasProfilesV7 = {
+  'Jurnal Demokrasi': {
+    shortName: 'Jurdem', orgType: 'Badan Hukum', email: 'jurnaldemokrasi.poldem@gmail.com', phone: '021-3102401', website: 'jurdem.or.id',
+    secretary: 'Rina Kurniawati', treasurer: 'Dedi Saputra', fullAddress: 'Jl. Medan Merdeka Selatan No. 12, Kelurahan Gambir, Kecamatan Gambir, Jakarta Pusat',
+    legalNumber: 'AHU-0008123.AH.01.07.Tahun 2025', period: '2025–2030', registeredAt: '12 Januari 2025', lastUpdated: '12 Juli 2026', documents: ['SK Kemenkumham/AHU', 'SK Kepengurusan', 'Surat Domisili', 'Program Kerja', 'NPWP Organisasi']
+  },
+  'Gerakan Anti Narkoba Nasional': {
+    shortName: 'GANNAS', orgType: 'Badan Hukum', email: 'sekretariat@gannas.or.id', phone: '021-8459012', website: 'gannas.or.id',
+    secretary: 'Dian Kusuma', treasurer: 'Rudi Setiawan', fullAddress: 'Jalan Remaja II No. 18, Kelurahan Ceger, Kecamatan Cipayung, Jakarta Timur',
+    legalNumber: 'AHU-0004967.AH.01.07.Tahun 2024', period: '2024–2029', registeredAt: '19 Juni 2024', lastUpdated: '13 Mei 2026', documents: ['SK Kemenkumham/AHU', 'SK Kepengurusan', 'Surat Tanda Lapor', 'Surat Domisili']
+  },
+  'Yayasan Peduli Pendidikan Anak Bangsa': {
+    shortName: 'YPPA', orgType: 'Non Badan Hukum / SKT', email: 'kontak@yppa.or.id', phone: '021-7884120', website: 'yppa.or.id',
+    secretary: 'Rudi Hartono', treasurer: 'Dian Lestari', fullAddress: 'Jl. Raya Pasar Minggu No. 45, Jakarta Selatan',
+    legalNumber: 'SKT-2023-00418', period: '2023–2028', registeredAt: '1 Juni 2023', lastUpdated: '7 Juli 2026', documents: ['SKT', 'SK Kepengurusan', 'Program Kerja', 'Surat Domisili', 'Foto Kantor']
+  },
+  'Komunitas Lingkungan Hijau Jakarta': {
+    shortName: 'KLHJ', orgType: 'Non Badan Hukum / SKT', email: 'info@klhj.or.id', phone: '021-4390128', website: 'klhj.or.id',
+    secretary: 'Maya Prameswari', treasurer: 'Fajar Nugroho', fullAddress: 'Jl. Yos Sudarso No. 88, Tanjung Priok, Jakarta Utara',
+    legalNumber: 'SKT-2022-00271', period: '2022–2027', registeredAt: '18 April 2022', lastUpdated: '10 Juli 2026', documents: ['SKT', 'SK Kepengurusan', 'Surat Domisili', 'Program Kerja']
+  },
+  'Forum Pemuda Betawi Bersatu': {
+    shortName: 'FPBB', orgType: 'Badan Hukum', email: 'sekretariat@fpbb.or.id', phone: '021-5598120', website: 'fpbb.or.id',
+    secretary: 'Siti Nurjanah', treasurer: 'Andri Maulana', fullAddress: 'Jl. Daan Mogot KM 12, Cengkareng, Jakarta Barat',
+    legalNumber: 'AHU-0012740.AH.01.07.Tahun 2024', period: '2024–2029', registeredAt: '1 Januari 2024', lastUpdated: '9 Juli 2026', documents: ['SK Kemenkumham/AHU', 'SK Kepengurusan', 'Program Kerja', 'NPWP', 'Surat Domisili']
+  },
+  'Majelis Edukasi Sosial Nusantara': {
+    shortName: 'MESN', orgType: 'Non Badan Hukum / SKT', email: 'sekretariat@mesn.or.id', phone: '021-4208812', website: 'mesn.or.id',
+    secretary: 'Ahmad Fauzan', treasurer: 'Lina Marlina', fullAddress: 'Jl. Garuda No. 25, Kemayoran, Jakarta Pusat',
+    legalNumber: 'SKT-2024-00516', period: '2024–2029', registeredAt: '14 Februari 2024', lastUpdated: '5 Juli 2026', documents: ['SKT', 'SK Kepengurusan', 'Program Kerja', 'Surat Domisili']
+  }
+};
+
+const extraActivityHistoryV7 = [
+  { id: 'AKT-2026-0524', org: 'Gerakan Anti Narkoba Nasional', activity: 'Sosialisasi Pencegahan Narkoba untuk Remaja', date: '2026-05-24', field: 'Sosial', description: 'Edukasi bahaya narkotika dan penguatan peran keluarga.', photos: 3, status: 'Disetujui' },
+  { id: 'AKT-2026-0412', org: 'Gerakan Anti Narkoba Nasional', activity: 'Pelatihan Relawan Anti Narkoba', date: '2026-04-12', field: 'Sosial', description: 'Pelatihan relawan tingkat kecamatan.', photos: 3, status: 'Disetujui' },
+  { id: 'AKT-2026-0503', org: 'Jurnal Demokrasi', activity: 'Kelas Partisipasi Publik', date: '2026-05-03', field: 'Pendidikan Politik', description: 'Pendidikan partisipasi warga dalam perencanaan pembangunan.', photos: 2, status: 'Disetujui' },
+  { id: 'AKT-2026-0321', org: 'Yayasan Peduli Pendidikan Anak Bangsa', activity: 'Donasi Buku dan Kelas Inspirasi', date: '2026-03-21', field: 'Pendidikan', description: 'Distribusi buku dan kelas inspirasi untuk anak.', photos: 3, status: 'Disetujui' },
+  { id: 'AKT-2026-0518', org: 'Forum Pemuda Betawi Bersatu', activity: 'Pelatihan Kepemimpinan Pemuda', date: '2026-05-18', field: 'Kepemudaan', description: 'Pelatihan kepemimpinan dan kerja sosial pemuda.', photos: 2, status: 'Disetujui' },
+  { id: 'AKT-2026-0427', org: 'Majelis Edukasi Sosial Nusantara', activity: 'Bakti Sosial Ramadan', date: '2026-04-27', field: 'Sosial', description: 'Pemberian paket kebutuhan pokok kepada warga.', photos: 3, status: 'Disetujui' }
+];
+
+function allActivityReportsV7() {
+  const existingIds = new Set(activityReports.map(item => item.id));
+  return [...activityReports, ...extraActivityHistoryV7.filter(item => !existingIds.has(item.id))];
+}
+
+function getOrmasDirectoryItemV7(name) {
+  return publicDirectory.find(item => item.name === name) || publicDirectory[0];
+}
+
+function getOrmasProfileV7(name) {
+  const directory = getOrmasDirectoryItemV7(name);
+  const profile = adminOrmasProfilesV7[name] || {};
+  return {
+    ...directory,
+    shortName: profile.shortName || directory.name.split(' ').map(word => word[0]).join('').slice(0, 5),
+    orgType: profile.orgType || 'Profil ORMAS terverifikasi',
+    email: profile.email || 'belum tersedia',
+    phone: profile.phone || 'belum tersedia',
+    website: profile.website || '-',
+    secretary: profile.secretary || '-',
+    treasurer: profile.treasurer || '-',
+    fullAddress: profile.fullAddress || directory.address,
+    legalNumber: profile.legalNumber || '-',
+    period: profile.period || '-',
+    registeredAt: profile.registeredAt || '-',
+    lastUpdated: profile.lastUpdated || '-',
+    documents: profile.documents || []
+  };
+}
+
+function getOrmasActivitiesV7(name) {
+  return allActivityReportsV7()
+    .filter(item => item.org === name)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+
+function getOrmasApplicationsV7(name) {
+  return applicationRequestsV6
+    .filter(item => item.org === name)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+
+function urgencyBadgeV7(level) {
+  const cls = level === 'Tinggi' ? 'red' : level === 'Sedang' ? 'orange' : 'blue';
+  return `<span class="pill ${cls}">${level}</span>`;
+}
+
+function workQueueRowsV7() {
+  const rows = [
+    { priority: 'Tinggi', service: 'Monitoring Pendaftaran', org: 'Yayasan Peduli Pendidikan Anak Bangsa', task: 'Periksa dokumen domisili sekretariat terbaru', updated: '10 menit lalu', due: 'Hari ini', action: "openAdminApplicationV6('ORM-2026-0706')" },
+    { priority: 'Tinggi', service: 'Monitoring Keaktifan', org: 'Komunitas Lingkungan Hijau Jakarta', task: 'Verifikasi 3 foto dan keterangan kegiatan', updated: '25 menit lalu', due: 'Hari ini', action: "openAdminReport('AKT-2026-0710')" },
+    { priority: 'Sedang', service: 'Monitoring Pendaftaran', org: 'Jurnal Demokrasi', task: 'Validasi SK Kemenkumham dan periode kepengurusan', updated: '1 jam lalu', due: 'Besok', action: "openAdminApplicationV6('ORM-2026-0712')" },
+    { priority: 'Sedang', service: 'Profil ORMAS', org: 'Komunitas Lingkungan Hijau Jakarta', task: 'Tinjau status tidak aktif dan riwayat laporan', updated: '2 jam lalu', due: '2 hari', action: "openAdminOrmasV7('Komunitas Lingkungan Hijau Jakarta')" },
+    { priority: 'Rendah', service: 'Direktori ORMAS', org: 'Forum Pemuda Betawi Bersatu', task: 'Periksa pembaruan informasi publik', updated: 'Kemarin', due: '3 hari', action: "openAdminOrmasV7('Forum Pemuda Betawi Bersatu')" }
+  ];
+  return rows.map((item, index) => `<tr>
+    <td>${index + 1}</td><td>${urgencyBadgeV7(item.priority)}</td><td><b>${item.service}</b></td>
+    <td><button class="link-button-v7" onclick="openAdminOrmasV7('${item.org.replace(/'/g, "\\'")}')">${item.org}</button><br><small>${item.task}</small></td>
+    <td>${item.updated}</td><td><b>${item.due}</b></td><td><button class="btn tiny" onclick="${item.action}">Kerjakan</button></td>
+  </tr>`).join('');
+}
+
+function recentActivityTimelineV7() {
+  const events = [
+    ['10:35', 'Laporan keaktifan baru masuk', 'Komunitas Lingkungan Hijau Jakarta • Aksi Bersih Pesisir'],
+    ['10:02', 'Pengajuan meminta perbaikan', 'Yayasan Peduli Pendidikan Anak Bangsa • Dokumen domisili'],
+    ['09:40', 'Pengajuan pendaftaran disetujui', 'Forum Pemuda Betawi Bersatu'],
+    ['09:15', 'Laporan kegiatan disetujui', 'Yayasan Peduli Pendidikan Anak Bangsa • Kelas Literasi Anak'],
+    ['Kemarin', 'Profil ORMAS diperbarui', 'Jurnal Demokrasi • Periode kepengurusan']
+  ];
+  return `<div class="activity-feed-v7">${events.map((item, index) => `<div class="activity-feed-item-v7"><span class="activity-dot-v7 ${index < 2 ? 'alert' : ''}"></span><div><small>${item[0]}</small><b>${item[1]}</b><p>${item[2]}</p></div></div>`).join('')}</div>`;
+}
+
+function operationalSummaryV7() {
+  return `<div class="work-summary-grid-v7">
+    <button class="work-summary-v7 urgent" onclick="go('#admin-applications')"><span>Pengajuan baru</span><b>${applicationRequestsV6.filter(item => item.status === 'Menunggu Verifikasi').length}</b><small>Perlu pemeriksaan awal</small></button>
+    <button class="work-summary-v7 warning" onclick="go('#admin-reports')"><span>Laporan kegiatan baru</span><b>${activityReports.filter(item => item.status === 'Menunggu Verifikasi').length}</b><small>Foto dan keterangan perlu ditinjau</small></button>
+    <button class="work-summary-v7 danger" onclick="go('#admin-applications')"><span>Melewati target waktu</span><b>1</b><small>Segera ditindaklanjuti</small></button>
+    <button class="work-summary-v7 success" onclick="go('#admin-directory')"><span>Profil perlu pembaruan</span><b>4</b><small>Masa bakti/kontak mendekati batas</small></button>
+  </div>`;
+}
+
+function adminQuickDirectoryRowsV7() {
+  return publicDirectory.slice(0, 6).map((item, index) => `<tr class="clickable-row-v7" onclick="openAdminOrmasV7('${item.name.replace(/'/g, "\\'")}')">
+    <td>${index + 1}</td><td><b>${item.name}</b><br><small>${getOrmasProfileV7(item.name).orgType}</small></td><td>${item.chair}</td><td>${item.region}</td><td>${item.field}</td><td>${statusBadge(item.status)}</td><td><button class="btn tiny" onclick="event.stopPropagation();openAdminOrmasV7('${item.name.replace(/'/g, "\\'")}')">Lihat Profil</button></td>
+  </tr>`).join('');
+}
+
+function adminDashboard() {
+  const pendingApplications = applicationRequestsV6.filter(item => item.status === 'Menunggu Verifikasi').length;
+  const waitingActivities = activityReports.filter(item => item.status === 'Menunggu Verifikasi').length;
+  const approvedActivities = activityReports.filter(item => item.status === 'Disetujui').length;
+  const activeOrganizations = publicDirectory.filter(item => approvedWithinOneYear(item.name) || item.status === 'Aktif').length;
+  const content = `<section class="work-center-v7">
+      <div class="work-center-head-v7"><div><span class="pill cyan">Pusat Kendali Pegawai</span><h2>Apa yang perlu dikerjakan hari ini?</h2><p>Prioritas disusun dari pengajuan baru, laporan keaktifan, target waktu layanan, dan data ORMAS yang perlu diperbarui.</p></div><div class="work-center-date-v7"><small>Selasa</small><b>22 Juli 2026</b><span>Data simulasi prototype</span></div></div>
+      ${operationalSummaryV7()}
+      <div class="work-center-grid-v7">
+        <article class="panel table-panel"><div class="panel-head"><div><h3>Tugas Berikutnya</h3><p class="muted">Urutan pekerjaan yang disarankan untuk pegawai.</p></div><button class="outline-btn" onclick="go('#admin-applications')">Semua Pekerjaan</button></div><div class="table-scroll"><table><thead><tr><th>No.</th><th>Prioritas</th><th>Layanan</th><th>ORMAS & Tugas</th><th>Pembaruan</th><th>Target</th><th>Aksi</th></tr></thead><tbody>${workQueueRowsV7()}</tbody></table></div></article>
+        <article class="panel"><div class="panel-head"><div><h3>Aktivitas Terbaru</h3><p class="muted">Riwayat perubahan sistem terbaru.</p></div></div>${recentActivityTimelineV7()}</article>
+      </div>
+    </section>
+    <div class="section-divider-title-v7"><div><h2>Ringkasan Monitoring</h2><p>Ikhtisar pendaftaran, keaktifan, dan status ORMAS.</p></div></div>
+    <div class="kpi-grid admin-kpis synced-kpis-v6">
+      ${kpi('Total ORMAS', publicDirectory.length, 'Direktori prototype', 'blue', '🏢')}
+      ${kpi('Pengajuan Menunggu', pendingApplications, 'Monitoring Pendaftaran', 'yellow', '⏳')}
+      ${kpi('Laporan Menunggu', waitingActivities, 'Monitoring Keaktifan', 'yellow', '📷')}
+      ${kpi('Laporan Disetujui', approvedActivities, 'Menjadi riwayat keaktifan', 'green', '✓')}
+      ${kpi('ORMAS Aktif', activeOrganizations, 'Berdasarkan laporan terverifikasi', 'green', '●')}
+      ${kpi('Perlu Pembaruan', 4, 'Profil/kepengurusan/kontak', 'red', '⚠')}
+    </div>
+    <div class="admin-sync-grid-v6">
+      <article class="panel"><div class="panel-head"><div><h3>Tren Pendaftaran ORMAS</h3><p class="muted">Pengajuan dari halaman pendaftaran.</p></div><button class="outline-btn" onclick="go('#admin-applications')">Monitoring Pendaftaran</button></div>${verticalBars([{month:'Jan',total:18},{month:'Feb',total:24},{month:'Mar',total:31},{month:'Apr',total:29},{month:'Mei',total:38},{month:'Jun',total:44},{month:'Jul',total:applicationRequestsV6.length + 42}])}</article>
+      <article class="panel"><div class="panel-head"><div><h3>Tren Pelaporan Keaktifan</h3><p class="muted">Laporan kegiatan dari ORMAS.</p></div><button class="outline-btn" onclick="go('#admin-reports')">Monitoring Keaktifan</button></div>${verticalBars(monthlyReports)}</article>
+    </div>
+    <article class="panel table-panel"><div class="panel-head"><div><h3>Direktori ORMAS — Akses Cepat</h3><p class="muted">Klik baris untuk melihat profil lengkap, riwayat pendaftaran, dan pelaporan kegiatan.</p></div><button class="outline-btn" onclick="go('#admin-directory')">Buka Direktori Lengkap</button></div><div class="table-scroll"><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Ketua</th><th>Wilayah</th><th>Bidang</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${adminQuickDirectoryRowsV7()}</tbody></table></div></article>`;
+  return adminShell(content, 'dashboard');
+}
+
+window.openAdminOrmasV7 = function (name) {
+  selectedAdminOrmasNameV7 = name;
+  go('#admin-ormas-detail');
+};
+
+window.openPublicOrmasV7 = function (name) {
+  selectedPublicOrmasNameV7 = name;
+  go('#public-ormas-detail');
+};
+
+function organizationApplicationHistoryV7(name) {
+  const apps = getOrmasApplicationsV7(name);
+  if (!apps.length) return '<div class="empty-state-v7">Belum ada riwayat pengajuan pada data prototype.</div>';
+  return `<div class="table-scroll"><table><thead><tr><th>No. Pengajuan</th><th>Tanggal</th><th>Jenis</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${apps.map(item => `<tr><td>${item.id}</td><td>${dateLabelV6(item.date)}</td><td>${item.requestType}</td><td>${registrationStatusBadgeV6(item.status)}</td><td><button class="btn tiny" onclick="openAdminApplicationV6('${item.id}')">Buka</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function organizationActivityHistoryV7(name, isPublic = false) {
+  const items = getOrmasActivitiesV7(name);
+  if (!items.length) return '<div class="empty-state-v7">Belum ada pelaporan kegiatan.</div>';
+  return `<div class="activity-history-grid-v7">${items.map(item => `<article class="activity-history-card-v7"><div class="activity-history-top-v7"><span class="pill blue">${item.field}</span>${statusBadge(item.status)}</div><h4>${item.activity}</h4><p>${item.description}</p><div class="activity-history-meta-v7"><span>📅 ${dateLabelV6(item.date)}</span><span>📷 ${item.photos || 0} foto</span></div>${isPublic ? '' : `<button class="outline-btn" onclick="openAdminReport('${item.id}')">Lihat Laporan</button>`}</article>`).join('')}</div>`;
+}
+
+function organizationTimelineV7(name) {
+  const profile = getOrmasProfileV7(name);
+  const activities = getOrmasActivitiesV7(name);
+  const apps = getOrmasApplicationsV7(name);
+  const events = [
+    ...apps.map(item => ({ date: item.date, title: `${item.requestType} — ${item.status}`, detail: item.id })),
+    ...activities.map(item => ({ date: item.date, title: `Pelaporan kegiatan: ${item.activity}`, detail: `${item.field} • ${item.status}` })),
+    { date: '2025-01-12', title: 'Profil ORMAS tercatat pada sistem', detail: `Nomor legalitas: ${profile.legalNumber}` }
+  ].sort((a,b) => String(b.date).localeCompare(String(a.date))).slice(0, 10);
+  return `<div class="timeline-v7">${events.map(event => `<div class="timeline-item-v7"><span></span><div><small>${dateLabelV6(event.date)}</small><b>${event.title}</b><p>${event.detail}</p></div></div>`).join('')}</div>`;
+}
+
+function adminOrmasDetailV7() {
+  const profile = getOrmasProfileV7(selectedAdminOrmasNameV7);
+  const activities = getOrmasActivitiesV7(profile.name);
+  const content = `<div class="profile-hero-v7"><div class="profile-avatar-v7">${profile.shortName}</div><div><span class="pill green">Profil ORMAS Terverifikasi</span><h2>${profile.name}</h2><p>${profile.orgType} • ${profile.field} • ${profile.region}</p></div><div class="profile-hero-actions-v7"><button class="outline-btn" onclick="toast('Simulasi mengirim pengingat kepada ORMAS')">Kirim Pengingat</button><button class="btn blue" onclick="go('#admin-reports')">Monitoring Keaktifan</button></div></div>
+    <div class="profile-layout-v7">
+      <div>
+        <article class="panel"><div class="panel-head"><div><h3>Informasi Lengkap ORMAS</h3><p class="muted">Data internal untuk pegawai.</p></div><button class="outline-btn" onclick="toast('Simulasi edit profil ORMAS')">Edit Profil</button></div><div class="detail-grid-v7">
+          <div><small>Nama Singkatan</small><b>${profile.shortName}</b></div><div><small>Status Keaktifan</small><b>${statusBadge(profile.status)}</b></div>
+          <div><small>Ketua</small><b>${profile.chair}</b></div><div><small>Sekretaris</small><b>${profile.secretary}</b></div><div><small>Bendahara</small><b>${profile.treasurer}</b></div>
+          <div><small>Periode Kepengurusan</small><b>${profile.period}</b></div><div><small>Nomor Legalitas</small><b>${profile.legalNumber}</b></div><div><small>Tanggal Terdaftar</small><b>${profile.registeredAt}</b></div>
+          <div><small>Email Organisasi</small><b>${profile.email}</b></div><div><small>Telepon</small><b>${profile.phone}</b></div><div><small>Website</small><b>${profile.website}</b></div>
+          <div class="wide-v7"><small>Alamat Sekretariat</small><b>${profile.fullAddress}</b></div><div><small>Pembaruan Terakhir</small><b>${profile.lastUpdated}</b></div>
+        </div></article>
+        <article class="panel"><div class="panel-head"><div><h3>Riwayat Pelaporan Kegiatan</h3><p class="muted">${activities.length} laporan kegiatan tercatat pada prototype.</p></div><button class="outline-btn" onclick="go('#admin-reports')">Lihat Semua Laporan</button></div>${organizationActivityHistoryV7(profile.name)}</article>
+        <article class="panel"><div class="panel-head"><div><h3>Riwayat Pengajuan/Pendaftaran</h3><p class="muted">Perubahan dan pengajuan layanan ORMAS.</p></div></div>${organizationApplicationHistoryV7(profile.name)}</article>
+      </div>
+      <aside>
+        <article class="panel"><h3>Ringkasan Aktivitas</h3><div class="profile-stat-list-v7"><div><span>Total laporan</span><b>${activities.length}</b></div><div><span>Laporan disetujui</span><b>${activities.filter(item => item.status === 'Disetujui').length}</b></div><div><span>Menunggu verifikasi</span><b>${activities.filter(item => item.status === 'Menunggu Verifikasi').length}</b></div><div><span>Kegiatan terakhir</span><b>${activities[0] ? dateLabelV6(activities[0].date) : '-'}</b></div></div></article>
+        <article class="panel"><h3>Dokumen Profil</h3><div class="document-list-v7">${profile.documents.map(name => `<button onclick="toast('Simulasi membuka ${name}')">📎 <span>${name}</span><small>Lihat</small></button>`).join('')}</div></article>
+        <article class="panel"><h3>Timeline ORMAS</h3>${organizationTimelineV7(profile.name)}</article>
+      </aside>
+    </div>`;
+  return adminShell(content, 'directory');
+}
+
+function adminDirectoryRowsV7() {
+  return publicDirectory.map((item, index) => `<tr class="clickable-row-v7" onclick="openAdminOrmasV7('${item.name.replace(/'/g, "\\'")}')">
+    <td>${index + 1}</td><td><button class="link-button-v7" onclick="event.stopPropagation();openAdminOrmasV7('${item.name.replace(/'/g, "\\'")}')">${item.name}</button></td><td>${item.chair}</td><td>${item.region}</td><td>${item.address}</td><td>${item.field}</td><td>${statusBadge(item.status)}</td><td><button class="btn tiny" onclick="event.stopPropagation();openAdminOrmasV7('${item.name.replace(/'/g, "\\'")}')">Detail</button></td>
+  </tr>`).join('');
+}
+
+function adminDirectoryV6() {
+  const content = `<article class="panel table-panel"><div class="panel-head"><div><h3>Direktori ORMAS</h3><p class="muted">Klik nama atau baris ORMAS untuk melihat informasi lengkap, riwayat pengajuan, dan pelaporan kegiatan.</p></div><button class="outline-btn" onclick="go('#public-dashboard')">Pratinjau Publik</button></div><div class="admin-filter-row"><label>Pencarian<input id="adminDirectorySearchV7" placeholder="Nama ORMAS, ketua, wilayah, bidang" oninput="renderAdminDirectoryV7()"></label><label>Status<select id="adminDirectoryStatusV7" onchange="renderAdminDirectoryV7()"><option value="">Semua Status</option><option>Aktif</option><option>Tidak Aktif</option></select></label></div><div class="table-scroll"><table><thead><tr><th>No.</th><th>Nama ORMAS</th><th>Nama Ketua</th><th>Wilayah</th><th>Alamat</th><th>Bidang</th><th>Status Keaktifan</th><th>Aksi</th></tr></thead><tbody id="adminDirectoryBodyV7">${adminDirectoryRowsV7()}</tbody></table></div></article>`;
+  return adminShell(content, 'directory');
+}
+
+window.renderAdminDirectoryV7 = function () {
+  const q = ($('#adminDirectorySearchV7')?.value || '').toLowerCase();
+  const status = $('#adminDirectoryStatusV7')?.value || '';
+  const items = publicDirectory.filter(item => (!q || `${item.name} ${item.chair} ${item.region} ${item.address} ${item.field}`.toLowerCase().includes(q)) && (!status || item.status === status));
+  const body = $('#adminDirectoryBodyV7');
+  if (!body) return;
+  body.innerHTML = items.length ? items.map((item, index) => `<tr class="clickable-row-v7" onclick="openAdminOrmasV7('${item.name.replace(/'/g, "\\'")}')"><td>${index + 1}</td><td><button class="link-button-v7" onclick="event.stopPropagation();openAdminOrmasV7('${item.name.replace(/'/g, "\\'")}')">${item.name}</button></td><td>${item.chair}</td><td>${item.region}</td><td>${item.address}</td><td>${item.field}</td><td>${statusBadge(item.status)}</td><td><button class="btn tiny" onclick="event.stopPropagation();openAdminOrmasV7('${item.name.replace(/'/g, "\\'")}')">Detail</button></td></tr>`).join('') : '<tr><td colspan="8" class="empty-state-v7">Data tidak ditemukan.</td></tr>';
+};
+
+function publicOrmasDetailV7() {
+  const profile = getOrmasProfileV7(selectedPublicOrmasNameV7);
+  return `${publicHeader()}<main class="page public-only"><div class="container"><div class="crumb">Dashboard Publik / Direktori ORMAS / ${profile.name}</div><div class="profile-hero-v7 public-profile-v7"><div class="profile-avatar-v7">${profile.shortName}</div><div><span class="pill green">Data Publik ORMAS</span><h1>${profile.name}</h1><p>${profile.orgType} • ${profile.field} • ${profile.region}</p></div><button class="outline-btn" onclick="go('#public-dashboard')">Kembali ke Direktori</button></div><div class="profile-layout-v7"><div><article class="panel"><h3>Informasi Organisasi</h3><div class="detail-grid-v7"><div><small>Nama Ketua</small><b>${profile.chair}</b></div><div><small>Status Keaktifan</small><b>${statusBadge(profile.status)}</b></div><div><small>Wilayah</small><b>${profile.region}</b></div><div><small>Bidang</small><b>${profile.field}</b></div><div><small>Email Organisasi</small><b>${profile.email}</b></div><div><small>Telepon Organisasi</small><b>${profile.phone}</b></div><div><small>Website</small><b>${profile.website}</b></div><div class="wide-v7"><small>Alamat Sekretariat</small><b>${profile.fullAddress}</b></div></div></article><article class="panel"><div class="panel-head"><div><h3>Riwayat Kegiatan yang Dipublikasikan</h3><p class="muted">Hanya kegiatan yang telah disetujui ditampilkan.</p></div></div>${organizationActivityHistoryV7(profile.name, true)}</article></div><aside><article class="panel"><h3>Kontak dan Kolaborasi</h3><p>Masyarakat atau ORMAS lain dapat menghubungi kontak organisasi yang telah disetujui untuk dipublikasikan.</p><button class="btn blue full-button" onclick="toast('Simulasi membuka email ${profile.email}')">Hubungi melalui Email</button><button class="outline-btn full-button" onclick="toast('Simulasi membuka website ${profile.website}')">Buka Website</button></article><article class="public-privacy-note-v7"><b>Batasan Informasi Publik</b><p>NIK, nomor HP pribadi pengurus, dokumen unggahan, catatan verifikasi, dan data internal tidak ditampilkan.</p></article></aside></div></div></main>${footer()}`;
+}
+
+const publicDirectoryRowsBeforeV7 = publicDirectoryRows;
+publicDirectoryRows = function () {
+  return publicDirectory.map((item, index) => `<tr class="clickable-row-v7" data-region="${item.region}" data-field="${item.field}" onclick="openPublicOrmasV7('${item.name.replace(/'/g, "\\'")}')"><td>${index + 1}</td><td><button class="link-button-v7" onclick="event.stopPropagation();openPublicOrmasV7('${item.name.replace(/'/g, "\\'")}')">${item.name}</button></td><td>${item.chair}</td><td>${item.address}</td><td>${item.field}</td><td>${item.region}</td><td>${statusBadge(item.status)}</td></tr>`).join('');
+};
+
+render = function () {
+  const route = location.hash || '#home';
+  if (route === '#home') app.innerHTML = homePage();
+  else if (route === '#ormas-portal') app.innerHTML = portalPage();
+  else if (route === '#public-dashboard') app.innerHTML = publicDashboard();
+  else if (route === '#public-ormas-detail') app.innerHTML = publicOrmasDetailV7();
+  else if (route === '#registration') app.innerHTML = registrationPage();
+  else if (route === '#ormas-login') app.innerHTML = loginPage();
+  else if (route === '#application') app.innerHTML = applicationPage();
+  else if (route === '#ormas-registration-form') app.innerHTML = ormasRegistrationFormPageV4();
+  else if (route === '#activity-report') app.innerHTML = activityReportPage();
+  else if (route === '#admin-dashboard') app.innerHTML = adminDashboard();
+  else if (route === '#admin-applications') app.innerHTML = adminApplicationsPageV6();
+  else if (route === '#admin-application-detail') app.innerHTML = adminApplicationDetailV6();
+  else if (route === '#admin-reports') app.innerHTML = adminReportsPage();
+  else if (route === '#admin-report-detail') app.innerHTML = adminReportDetail();
+  else if (route === '#admin-directory') app.innerHTML = adminDirectoryV6();
+  else if (route === '#admin-ormas-detail') app.innerHTML = adminOrmasDetailV7();
+  else app.innerHTML = homePage();
+  window.scrollTo(0, 0);
+  if (route === '#public-dashboard') setTimeout(() => { renderPublicDirectoryV2(); updateRegionDetailV2(publicDirectoryStateV2.region); }, 0);
+};
+
+/* V7.1: make the paginated public directory clickable as well */
+getOrmasDirectoryItemV7 = function (name) {
+  return publicDirectory.find(item => item.name === name) || publicDirectoryV2.find(item => item.name === name) || publicDirectory[0];
+};
+
+getOrmasProfileV7 = function (name) {
+  const directory = getOrmasDirectoryItemV7(name);
+  const profile = adminOrmasProfilesV7[name] || {};
+  return {
+    ...directory,
+    shortName: profile.shortName || directory.name.split(' ').map(word => word[0]).join('').slice(0, 5),
+    orgType: profile.orgType || 'ORMAS terdata',
+    email: profile.email || `sekretariat@${directory.name.toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 16)}.or.id`,
+    phone: profile.phone || 'Kontak tersedia melalui sekretariat',
+    website: profile.website || '-',
+    secretary: profile.secretary || '-',
+    treasurer: profile.treasurer || '-',
+    fullAddress: profile.fullAddress || directory.address,
+    legalNumber: profile.legalNumber || '-',
+    period: profile.period || '-',
+    registeredAt: profile.registeredAt || '-',
+    lastUpdated: profile.lastUpdated || 'Juli 2026',
+    documents: profile.documents || []
+  };
+};
+
+renderPublicDirectoryV2 = function () {
+  const body = document.querySelector('#publicDirectoryBodyV2');
+  const pages = document.querySelector('#publicDirectoryPagesV2');
+  const info = document.querySelector('#publicDirectoryInfoV2');
+  if (!body || !pages || !info) return;
+  const filtered = filteredPublicDirectoryV2();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / publicDirectoryStateV2.perPage));
+  if (publicDirectoryStateV2.page > totalPages) publicDirectoryStateV2.page = totalPages;
+  const start = (publicDirectoryStateV2.page - 1) * publicDirectoryStateV2.perPage;
+  const rows = filtered.slice(start, start + publicDirectoryStateV2.perPage);
+  body.innerHTML = rows.length ? rows.map((item, index) => `<tr class="clickable-row-v7" onclick="openPublicOrmasV7('${item.name.replace(/'/g, "\\'")}')"><td>${start + index + 1}</td><td><button class="link-button-v7" onclick="event.stopPropagation();openPublicOrmasV7('${item.name.replace(/'/g, "\\'")}')">${item.name}</button></td><td>${item.chair}</td><td>${item.region}</td><td>${item.address}</td><td>${item.field}</td><td>${statusBadge(item.status)}</td></tr>`).join('') : `<tr><td class="empty-directory" colspan="7">Data ORMAS tidak ditemukan.</td></tr>`;
+  const first = filtered.length ? start + 1 : 0;
+  const last = Math.min(start + publicDirectoryStateV2.perPage, filtered.length);
+  info.textContent = `Menampilkan ${first}-${last} dari ${filtered.length} ORMAS • Klik baris untuk melihat profil publik`;
+  let html = `<button class="page-btn" ${publicDirectoryStateV2.page === 1 ? 'disabled' : ''} onclick="changePublicDirectoryPageV2(${publicDirectoryStateV2.page - 1})">Sebelumnya</button>`;
+  for (let p = 1; p <= totalPages; p++) html += `<button class="page-btn ${p === publicDirectoryStateV2.page ? 'active' : ''}" onclick="changePublicDirectoryPageV2(${p})">${p}</button>`;
+  html += `<button class="page-btn" ${publicDirectoryStateV2.page === totalPages ? 'disabled' : ''} onclick="changePublicDirectoryPageV2(${publicDirectoryStateV2.page + 1})">Berikutnya</button>`;
+  pages.innerHTML = html;
+};

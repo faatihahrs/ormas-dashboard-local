@@ -1,27 +1,17 @@
-# BAKESBANGPOL ORMAS Prototype - SKT dan Keaktifan Dipisah
+# Prototype Dashboard ORMAS — Pusat Kerja Pegawai
 
-Prototype lokal ini memisahkan proses:
+Pembaruan utama:
 
-1. Pengajuan Tanda Lapor / SKT ORMAS
-   - Menggunakan profil ORMAS terverifikasi.
-   - Tidak meminta ulang data pendaftaran yang sudah ada.
-   - Fokus pada surat permohonan, perubahan data bila ada, dokumen pendukung, verifikasi, dan output surat PDF.
+- Dashboard Pegawai diawali dengan pusat kendali pekerjaan hari ini.
+- Tabel Tugas Berikutnya disusun berdasarkan prioritas dan target waktu.
+- Panel Aktivitas Terbaru menampilkan riwayat perubahan sistem.
+- Direktori ORMAS dapat diklik.
+- Detail ORMAS menampilkan profil internal, pengurus, kontak, legalitas, dokumen, riwayat pendaftaran, timeline, dan pelaporan kegiatan.
+- Direktori publik juga dapat diklik, tetapi hanya menampilkan informasi publik yang aman dan kegiatan yang telah disetujui.
+- Menu utama pegawai tetap: Dashboard Pegawai, Monitoring Pendaftaran, dan Monitoring Keaktifan.
 
-2. Pelaporan Keaktifan ORMAS
-   - Proses khusus laporan kegiatan berkala.
-   - Tidak menghasilkan SKT/tanda lapor.
-   - Fokus pada detail kegiatan, periode laporan, peserta/manfaat, wilayah kegiatan, bukti kegiatan, review, dan rekap keaktifan.
-
-Cara menjalankan:
+Jalankan dengan membuka `index.html` atau menggunakan server lokal:
 
 ```bash
-cd bakesbangpol-ormas-keaktifan-separated-prototype
 python -m http.server 8000
 ```
-
-Buka: http://localhost:8000
-
-## Update direktori publik ORMAS
-Prototype ini menambahkan tabel direktori ORMAS pada Dashboard Publik dan Dashboard Pegawai.
-Data yang ditampilkan dibatasi untuk konsumsi publik: nama ORMAS, singkatan, jenis ORMAS, bidang kegiatan, wilayah umum, email/telepon organisasi, website, dan status publik.
-Data internal seperti NIK, nomor HP pribadi pengurus, nomor tiket, dokumen upload, catatan verifikasi, dan status koreksi tidak ditampilkan di dashboard publik.
